@@ -11,11 +11,11 @@ gi.require_version("Gst", "1.0")
 from gi.repository import GObject, GLib, Gst
 from loguru import logger
 
-from labels import CocoLabels, NSFWLabels, FlagLabels
+from labels import NSFWLabels, FlagLabels
 from trt_postprocess import postprocess
 
 
-class PipleParts():
+class PipelineParts():
     def __init__(
         self,   
         conf_threshold=0.5, 

@@ -12,7 +12,7 @@ from loguru import logger
 
 from common.bus_call import bus_call
 
-from pipeline_parts import PipleParts
+from pipeline_parts import PipelineParts
 from pipeline_type import h264_pipeline, uri_local_pipeline
 
 
@@ -50,7 +50,7 @@ def ds_pipeline(
     output_video_name="./ds_triton_yolov5_trt_out.mp4", 
     label_type="flag"):
     # Initialize Pipleline parts
-    pl = PipleParts(
+    pl = PipelineParts(
         is_save_output=IS_SAVE, 
         image_width=IMAGE_WIDTH, image_height=IMAGE_HEIGHT, 
         conf_threshold=CONF_THRESHOLD, nms_threshold=IOU_THRESHOLD, 
