@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE"
 parser.add_argument(
     "--test_video", help="test video file path or uri", type=str, 
     default="/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264")
-parser.add_argument("--label_type", help="Label type (coco)", type=str, default="coco")
+parser.add_argument("--label_type", help="Label type (flag/nsfw)", type=str, default="flag")
 parser.add_argument("--is_save", help="Save result video output", action="store_true")
 parser.add_argument("--conf", help="Confidence threshold for YOLOv5", type=float, default=0.5)
 parser.add_argument("--iou", help="IOU threshold", type=float, default=0.45)

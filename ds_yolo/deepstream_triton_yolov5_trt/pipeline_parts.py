@@ -31,9 +31,9 @@ class PipelineParts():
         self.image_height = image_height
         
         if label_type == "flag":
-            self.Label = FlagLabels
+            self.label = FlagLabels
         elif label_type == "nsfw":
-            self.Label = NSFWLabels
+            self.label = NSFWLabels
         
     def make_elm_or_print_err(self, factoryname, name, printedname, detail=""):
         """ Creates an element with Gst Element Factory make.
@@ -284,12 +284,7 @@ class PipelineParts():
                     nms_threshold=self.nms_thresh)
 
                 bboxes = [[int(box.x1), int(box.y1), int(box.x2), int(box.y2)] for box in detected_obj]
-                for box in detected_obj:
-                    print(box.classID)
-                    print(type(self.Label))
-                    x = self.Label(box.classID)
-                    print("x: ", x)
-                labels = [self.Label(int(box.classID)).name for box in detected_obj]
+                labels = [self.label(int(box.classID)).name for box in detected_obj]
                 scores = [box.confidence for box in detected_obj]
 
                 ensemble_results = {
