@@ -49,11 +49,11 @@ def ds_pipeline(
     is_dali=False, 
     output_video_name="./ds_triton_yolov5_trt_out.mp4", 
     label_type="flag"):
-    # Initialize Pipleline parts
+        # Initialize Pipleline parts
     pl = PipelineParts(
-        is_save_output=IS_SAVE, 
-        image_width=IMAGE_WIDTH, image_height=IMAGE_HEIGHT, 
-        conf_threshold=CONF_THRESHOLD, nms_threshold=IOU_THRESHOLD, 
+        is_save_output=is_save_output, 
+        image_width=outvid_width, image_height=outvid_height, 
+        conf_threshold=conf_threshold, nms_threshold=iou_threshold, 
         label_type=label_type)
 
     # Standard GStreamer initialization
@@ -72,18 +72,18 @@ def ds_pipeline(
             pipeline, pgie, nvosd = h264_pipeline(
                 pipeline, pl, 
                 test_video, 
-                is_save_output=IS_SAVE, 
-                output_video_name=OUTPUT_VIDEO_NAME, 
-                image_width=IMAGE_WIDTH, image_height=IMAGE_HEIGHT,
-                is_dali=IS_DALI)
+                is_save_output=is_save_output, 
+                output_video_name=output_video_name, 
+                image_width=outvid_width, image_height=outvid_height,
+                is_dali=is_dali)
         elif "file://" in test_video or "https://" in test_video:
             pipeline, pgie, nvosd = uri_local_pipeline(
                 pipeline, pl, 
                 test_video, 
-                is_save_output=IS_SAVE, 
-                output_video_name=OUTPUT_VIDEO_NAME, 
-                image_width=IMAGE_WIDTH, image_height=IMAGE_HEIGHT, 
-                is_dali=IS_DALI)
+                is_save_output=is_save_output, 
+                output_video_name=output_video_name, 
+                image_width=outvid_width, image_height=outvid_height, 
+                is_dali=is_dali)
     except Exception as ex:
         logger.error(ex)
         sys.exit(1)
@@ -101,7 +101,7 @@ def ds_pipeline(
 
     pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe, 0)
 
-    if IS_SAVE:
+    if is_save_output:
         # Lets add probe to get informed of the meta data generated, we add probe to
         # the sink pad of the osd element, since by that time, the buffer would have
         # had got all the metadata.
