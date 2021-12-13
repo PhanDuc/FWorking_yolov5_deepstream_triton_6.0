@@ -1,5 +1,6 @@
 import argparse
 import pyds
+import time
 import sys
 
 sys.path.append("../")
@@ -49,7 +50,8 @@ def ds_pipeline(
     is_dali=False, 
     output_video_name="./ds_triton_yolov5_trt_out.mp4", 
     label_type="flag"):
-        # Initialize Pipleline parts
+    init_t = time.perf_counter()
+    # Initialize Pipleline parts
     pl = PipelineParts(
         is_save_output=is_save_output, 
         image_width=outvid_width, image_height=outvid_height, 
@@ -110,16 +112,25 @@ def ds_pipeline(
             sys.stderr.write(" Unable to get sink pad of nvosd \n")
 
         osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, pl.osd_sink_pad_buffer_probe, 0)
+    done_init_t = time.perf_counter() - init_t
 
     # start play back and listen to events
     print("Starting pipeline \n")
     pipeline.set_state(Gst.State.PLAYING)
+    
+    start_t = time.perf_counter()
     try:
         loop.run()
     except:
         pass
     # cleanup
     pipeline.set_state(Gst.State.NULL)
+    
+    end = time.perf_counter() - start_t
+    
+    logger.info(f"Initialize pipeline time: {done_init_t:.5f}")
+    logger.info(f"Inference + Postprocess + save (option): {end:.5f}")
+    logger.info(f"elapsed_time: {(done_init_t + end):.5f}")
 
 
 if __name__ == "__main__":
