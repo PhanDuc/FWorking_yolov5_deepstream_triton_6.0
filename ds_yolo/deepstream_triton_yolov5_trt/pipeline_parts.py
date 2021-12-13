@@ -213,7 +213,7 @@ class PipelineParts():
 
         #label_names = self.get_label_names_from_file()
 
-        c = 0
+        
         while l_frame is not None:
             try:
                 # Note that l_frame.data needs a cast to pyds.NvDsFrameMeta
@@ -228,7 +228,7 @@ class PipelineParts():
             l_user = frame_meta.frame_user_meta_list
             
             if not self.is_save_output:
-                if c == 0:
+                if frame_meta.frame_num == 0:
                     # get width and height of source video 
                     src_width = frame_meta.source_frame_width
                     src_height = frame_meta.source_frame_height
@@ -241,8 +241,8 @@ class PipelineParts():
                 height_prp = self.image_height
                 width_prp = self.image_width 
 
-
-            c += 1
+            
+            
             while l_user is not None:
                 try:
                     # Note that l_user.data needs a cast to pyds.NvDsUserMeta
