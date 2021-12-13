@@ -235,8 +235,8 @@ class PipelineParts():
                     logger.info(f"source_height: {src_height}")
                     logger.info(f"source_width: {src_width}")
 
-                height_prp = src_height
-                width_prp = src_width
+                    height_prp = src_height
+                    width_prp = src_width
             else: 
                 height_prp = self.image_height
                 width_prp = self.image_width 
