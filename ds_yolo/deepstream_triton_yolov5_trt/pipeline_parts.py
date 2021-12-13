@@ -231,8 +231,8 @@ class PipelineParts():
                 # get width and height of source video 
                 src_width = frame_meta.source_frame_width
                 src_height = frame_meta.source_frame_height
-                logger.info(f"source_height: {src_height}")
-                logger.info(f"source_width: {src_width}")
+                #logger.info(f"source_height: {src_height}")
+                #logger.info(f"source_width: {src_width}")
 
                 height_prp = src_height
                 width_prp = src_width
