@@ -1,0 +1,18 @@
+name: "yolov5_flag_trt"
+platform: "tensorrt_plan"
+max_batch_size: 8
+input {
+  name: "data"
+  data_type: TYPE_FP32
+  dims: 3
+  dims: 640
+  dims: 640
+}
+output {
+  name: "prob"
+  data_type: TYPE_FP32
+  dims: 6001
+  dims: 1
+  dims: 1
+}
+default_model_filename: "model_flag.plan"
