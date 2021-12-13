@@ -292,7 +292,7 @@ class PipelineParts():
                         "labels":labels, 
                         "boxes":bboxes}
                 }
-                print(f"--> ensemble_result: {ensemble_results}")
+                logger.info(f"--> ensemble_result: {ensemble_results}")
 
                 try:
                     l_user = l_user.next
