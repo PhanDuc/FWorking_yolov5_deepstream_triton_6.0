@@ -284,6 +284,9 @@ class PipelineParts():
                     nms_threshold=self.nms_thresh)
 
                 bboxes = [[int(box.x1), int(box.y1), int(box.x2), int(box.y2)] for box in detected_obj]
+                for box in detected_obj:
+                    x = self.label(box.classID)
+                    print("x: ", x)
                 labels = [self.label(int(box.classID)).name for box in detected_obj]
                 scores = [box.confidence for box in detected_obj]
 

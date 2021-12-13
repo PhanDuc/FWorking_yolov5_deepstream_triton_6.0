@@ -17,3 +17,7 @@ class NSFWLabels(Enum):
 class HorrorLabels(Enum):
     horror = 1
     safe = 0
+
+if __name__ == "__main__":
+    x = FlagLabels(0).name
+    print(x)
