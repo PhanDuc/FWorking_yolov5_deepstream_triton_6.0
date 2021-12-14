@@ -242,6 +242,8 @@ class PipelineParts():
                 break
             
             l_user = frame_meta.frame_user_meta_list
+            logger.info(f"l_user.base_meta: {l_user.base_meta}")
+            logger.info(f"l_user.user_meta_data: {l_user.user_meta_data}")
             
             if not self.is_save_output:
                 # get width and height of source video 
@@ -295,12 +297,12 @@ class PipelineParts():
                     layers_info.append(layer)
                 #logger.info(f"layers_info: {layers_info}")
                 
-                for output in np.split(output_np_array, 2):
-                    detected_obj = postprocess(
-                        output_np_array, 
-                        width_prp, height_prp,
-                        conf_threshold=self.conf_thresh, 
-                        nms_threshold=self.nms_thresh)
+                #for output in np.split(output_np_array, 2):
+                detected_obj = postprocess(
+                    output_np_array, 
+                    width_prp, height_prp,
+                    conf_threshold=self.conf_thresh, 
+                    nms_threshold=self.nms_thresh)
 
                 bboxes = [[int(box.x1), int(box.y1), int(box.x2), int(box.y2)] for box in detected_obj]
                 labels = [self.label(int(box.classID)).name for box in detected_obj]
