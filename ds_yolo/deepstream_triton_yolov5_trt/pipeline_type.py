@@ -13,7 +13,9 @@ def h264_pipeline(
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, is_dali=False):
-    
+    """
+    Build pipeline for inference h264 stream video input
+    """
     # Source element for reading from the file
     source = pl.make_elm_or_print_err("filesrc", "file-source", "Source")
 
@@ -168,6 +170,9 @@ def decodebin_child_added(child_proxy, Object, name, user_data):
 
 
 def create_source_bin(uri):
+    """
+    Decode file video local and URI video input 
+    """
     print("Creating source bin")
 
     # Create a source GstBin to abstract this bin's content from the rest of the
@@ -210,6 +215,9 @@ def uri_local_pipeline(
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, 
     is_dali=False):
+    """
+    Build Pipeline for inference mp4 and URI video input 
+    """
     # Source element for reading from the uri or local file
     # Create nvstreammux instance to form batches from one or more sources.
     streammux = pl.make_elm_or_print_err("nvstreammux", "Stream-muxer", "NvStreamMux")

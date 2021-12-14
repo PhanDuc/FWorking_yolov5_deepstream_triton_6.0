@@ -50,6 +50,10 @@ class PipelineParts():
 
 
     def osd_sink_pad_buffer_probe(self, pad, info, u_data):
+        """
+        Encode frame and save to video output. 
+        """
+        
         frame_number = 0
         # Intiallizing object counter with 0.
         num_rects = 0
@@ -133,7 +137,9 @@ class PipelineParts():
 
 
     def add_obj_meta_to_frame(self, bbox, score, label, batch_meta, frame_meta):
-        """ Inserts an object into the metadata """
+        """ 
+        Inserts an object into the metadata 
+        """
         untracked_obj_id=0xffffffffffffffff
         # this is a good place to insert objects into the metadata.
         # Here's an example of inserting a single object.
@@ -196,6 +202,11 @@ class PipelineParts():
 
 
     def pgie_src_pad_buffer_probe(self, pad, info, u_data):
+        """
+        Get tensor_metadata from triton inference output 
+        Convert tensor metadata to numpy array 
+        Postprocessing 
+        """
         # get the buffer of info argument
         gst_buffer = info.get_buffer()
         if not gst_buffer:
@@ -258,7 +269,8 @@ class PipelineParts():
                 ):
                     #logger.info("user_meta: {}".format(user_meta))
                     continue
-
+                
+                # get tensor-meta from triton inference output
                 tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
                 #logger.info("tensor_meta: {}".format(tensor_meta))
 
@@ -269,7 +281,8 @@ class PipelineParts():
                 #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
                 for i in range(tensor_meta.num_output_layers):
                     layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                    #logger.info(f"layer shape: {layer.dims.d}")
+                    
+                    # Convert tensor metadata to numpy array
                     ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
                     output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
                     #logger.info(f"--> np_array.shape: {output_np_array.shape}")
@@ -298,7 +311,8 @@ class PipelineParts():
                     l_user = l_user.next
                 except StopIteration:
                     break
-                    
+
+                # If save video output is true, add bbox and score, label information to frame                     
                 if self.is_save_output:
                     for bbox, score, label in zip(bboxes, scores, labels): 
                         #logger.info(f"bounding box: {bbox}")

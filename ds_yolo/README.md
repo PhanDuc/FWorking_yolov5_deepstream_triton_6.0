@@ -63,10 +63,16 @@ Or use directly:
 
 [**dali_yolov5_trt_preprocess** config file](./triton_server_config_file/dali_yolov5_trt_preprocess_config.pbtxt)
 
-## Run Inference 
+## Run Video Inference 
 ![](./deepstream_triton.PNG)
 
 This figure describe Deepstream Triton inference process.
+
+**Note:**
+
+- Config inference is [here](./deepstream_triton_yolov5_trt/ds_yolov5_trt_nopostprocess.txt)
+
+- You can reference Triton inferserver at [here](https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_plugin_gst-nvinferserver.html)
 
 ### Run Docker
 ```
@@ -92,7 +98,7 @@ after that,
 root@9a4576858652:/opt/nvidia/deepstream/deepstream-6.0# pip3 install ./pyds-1.1.0-py3-none*.whl
 ```
 
-## Run Video Inference
+### Testing Video Inference
 Finally, run video inference inside docker.
 ```
 cd sources
@@ -134,3 +140,5 @@ python3 deepstream_yolo_trt_parser.py --test_video file:///path/to/video.mp4
 ```
 python3 deepstream_yolo_trt_parser.py --test_video https://uri_video.mp4
 ```
+
+## [Reference](./reference.md)
