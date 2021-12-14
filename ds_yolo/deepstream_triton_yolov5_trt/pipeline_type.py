@@ -81,8 +81,10 @@ def h264_pipeline(
     streammux.set_property("batch-size", 1)
     streammux.set_property("batched-push-timeout", 4000000)
     if not is_dali:
+        logger.info("DeepStream Triton yolov5 tensorRT inference")
         pgie.set_property("config-file-path", "ds_yolov5_trt_nopostprocess.txt")
     else:
+        logger.info("DeepStream Triton DALI yolov5 tensorRT inference")
         pgie.set_property("config-file-path", "ds_dali_yolov5_trt_nopostprocess.txt")
 
     print("Adding elements to Pipeline \n")

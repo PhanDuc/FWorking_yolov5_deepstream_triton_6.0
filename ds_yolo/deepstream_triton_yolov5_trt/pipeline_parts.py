@@ -237,7 +237,7 @@ class PipelineParts():
                 # in the C code, so the Python garbage collector will leave
                 # it alone.
                 frame_meta = pyds.NvDsFrameMeta.cast(l_frame.data)
-                #logger.info("frame_meta: {}".format(frame_meta))
+                logger.info("frame_meta: {}".format(frame_meta.num_obj_meta))
             except StopIteration:
                 break
             
@@ -286,6 +286,7 @@ class PipelineParts():
                 #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
                 for i in range(tensor_meta.num_output_layers):
                     layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
+                    logger.info(f"dims: {layer.dims}")
                     
                     # Convert tensor metadata to numpy array
                     ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
@@ -294,11 +295,12 @@ class PipelineParts():
                     layers_info.append(layer)
                 #logger.info(f"layers_info: {layers_info}")
                 
-                detected_obj = postprocess(
-                    output_np_array, 
-                    width_prp, height_prp,
-                    conf_threshold=self.conf_thresh, 
-                    nms_threshold=self.nms_thresh)
+                for output in np.split(output_np_array, 2):
+                    detected_obj = postprocess(
+                        output_np_array, 
+                        width_prp, height_prp,
+                        conf_threshold=self.conf_thresh, 
+                        nms_threshold=self.nms_thresh)
 
                 bboxes = [[int(box.x1), int(box.y1), int(box.x2), int(box.y2)] for box in detected_obj]
                 labels = [self.label(int(box.classID)).name for box in detected_obj]
