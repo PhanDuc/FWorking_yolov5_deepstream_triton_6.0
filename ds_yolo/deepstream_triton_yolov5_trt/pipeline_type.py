@@ -218,7 +218,7 @@ def uri_local_pipeline(
     image_width=1920, image_height=1080, 
     is_dali=False):
     """
-    Build Pipeline for inference mp4 and URI video input 
+    Build Pipeline for inference mp4 and URI video 
     """
     # Source element for reading from the uri or local file
     # Create nvstreammux instance to form batches from one or more sources.

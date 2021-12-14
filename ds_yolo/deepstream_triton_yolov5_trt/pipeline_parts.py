@@ -224,8 +224,7 @@ class PipelineParts():
         
         l_frame = batch_meta.frame_meta_list
 
-        logger.info(f"num_frames_in_batch: {batch_meta.num_frames_in_batch}")
-        logger.info(f"max_frames_in_batch: {batch_meta.max_frames_in_batch}")
+        logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
 
         #label_names = self.get_label_names_from_file()
 
@@ -237,13 +236,11 @@ class PipelineParts():
                 # in the C code, so the Python garbage collector will leave
                 # it alone.
                 frame_meta = pyds.NvDsFrameMeta.cast(l_frame.data)
-                logger.info("frame_meta: {}".format(frame_meta.num_obj_meta))
+                #logger.info("frame_meta: {}".format(frame_meta))
             except StopIteration:
                 break
             
             l_user = frame_meta.frame_user_meta_list
-            logger.info(f"l_user.base_meta: {l_user.base_meta}")
-            logger.info(f"l_user.user_meta_data: {l_user.user_meta_data}")
             
             if not self.is_save_output:
                 # get width and height of source video 
@@ -288,7 +285,6 @@ class PipelineParts():
                 #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
                 for i in range(tensor_meta.num_output_layers):
                     layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                    logger.info(f"dims: {layer.dims}")
                     
                     # Convert tensor metadata to numpy array
                     ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
@@ -297,7 +293,6 @@ class PipelineParts():
                     layers_info.append(layer)
                 #logger.info(f"layers_info: {layers_info}")
                 
-                #for output in np.split(output_np_array, 2):
                 detected_obj = postprocess(
                     output_np_array, 
                     width_prp, height_prp,
