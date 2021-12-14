@@ -213,6 +213,7 @@ class PipelineParts():
             print("Unable to get GstBuffer ")
             return
         logger.info(f"gst_buffer: {gst_buffer}")
+        logger.info(f"hash gst_buffer: {hash(gst_buffer)}")
 
         # Retrieve batch metadata from the gst_buffer
         # Note that pyds.gst_buffer_get_nvds_batch_meta() expects the
@@ -222,6 +223,9 @@ class PipelineParts():
         #logger.info("batch_meta: {}".format(batch_meta))
         
         l_frame = batch_meta.frame_meta_list
+
+        logger.info(f"num_frames_in_batch: {batch_meta.num_frames_in_batch}")
+        logger.info(f"max_frames_in_batch: {batch_meta.max_frames_in_batch}")
 
         #label_names = self.get_label_names_from_file()
 
