@@ -212,6 +212,7 @@ class PipelineParts():
         if not gst_buffer:
             print("Unable to get GstBuffer ")
             return
+        logger.info(f"gst_buffer: {gst_buffer}")
 
         # Retrieve batch metadata from the gst_buffer
         # Note that pyds.gst_buffer_get_nvds_batch_meta() expects the
