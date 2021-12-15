@@ -364,7 +364,7 @@ class PipelineParts():
         
         l_frame = batch_meta.frame_meta_list
 
-        #logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
+        logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
         #logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
         #logger.info(f"l_frame: {l_frame}")
         #label_names = self.get_label_names_from_file()
@@ -399,8 +399,11 @@ class PipelineParts():
 
             
             c += 1
-            #print("c: ", c)
+            print("c: ", c)
+            c1 = 0
             while l_user is not None:
+                c1 += 1
+                print("c1: ", c1)
                 try:
                     # Note that l_user.data needs a cast to pyds.NvDsUserMeta
                     # The casting also keeps ownership of the underlying memory
