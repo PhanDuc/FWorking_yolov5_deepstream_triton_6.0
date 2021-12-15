@@ -364,7 +364,7 @@ class PipelineParts():
         #logger.info(f"l_frame: {l_frame}")
         #label_names = self.get_label_names_from_file()
         
-        c = 0
+        
         #while l_frame is not None:
         try:
             # Note that l_frame.data needs a cast to pyds.NvDsFrameMeta
@@ -393,7 +393,7 @@ class PipelineParts():
             height_prp = self.image_height
             width_prp = self.image_width 
 
-            
+        c = 0    
         while l_user is not None:
             try:
                 # Note that l_user.data needs a cast to pyds.NvDsUserMeta
@@ -456,8 +456,8 @@ class PipelineParts():
                 except StopIteration:
                     break
 
-                c += 1
-                print("c: ", c)
+            c += 1
+            print("c: ", c)
             
 
                 
