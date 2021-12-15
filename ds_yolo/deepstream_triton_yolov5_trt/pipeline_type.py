@@ -9,7 +9,8 @@ from loguru import logger
 
 def h264_pipeline(
     pipeline, pl, 
-    test_video_file, 
+    test_video_file,
+    batch_size=1,  
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, is_dali=False):
@@ -78,7 +79,7 @@ def h264_pipeline(
     source.set_property("location", test_video_file)
     streammux.set_property("width", image_width)
     streammux.set_property("height", image_height)
-    streammux.set_property("batch-size", 1)
+    streammux.set_property("batch-size", batch_size)
     streammux.set_property("batched-push-timeout", 4000000)
     if not is_dali:
         logger.info("DeepStream Triton yolov5 tensorRT inference")
@@ -213,6 +214,7 @@ def create_source_bin(uri):
 def uri_local_pipeline(
     pipeline, pl, 
     test_video_file, 
+    batch_size=1, 
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, 
@@ -279,7 +281,7 @@ def uri_local_pipeline(
     
     streammux.set_property("width", image_width)
     streammux.set_property("height", image_height)
-    streammux.set_property("batch-size", 1)
+    streammux.set_property("batch-size", batch_size)
     streammux.set_property("batched-push-timeout", 4000000)
     if not is_dali:
         logger.info("DeepStream Triton yolov5 tensorRT inference")

@@ -228,9 +228,7 @@ class PipelineParts():
         logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
         logger.info(f"l_frame: {l_frame}")
         #label_names = self.get_label_names_from_file()
-        for frame_meta in l_frame:
-            logger.info(f"frame_meta: {frame_meta}")
-
+        
         
         while l_frame is not None:
             try:
@@ -242,7 +240,7 @@ class PipelineParts():
                 #logger.info("frame_meta: {}".format(frame_meta))
             except StopIteration:
                 break
-            
+            logger.info(f"--> frame_num: {frame_meta.frame_num}")
             l_user = frame_meta.frame_user_meta_list
             logger.info(f"l_user: {l_user}")
             
@@ -289,7 +287,7 @@ class PipelineParts():
                 #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
                 for i in range(tensor_meta.num_output_layers):
                     layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                    
+                    logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
                     # Convert tensor metadata to numpy array
                     ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
                     output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))

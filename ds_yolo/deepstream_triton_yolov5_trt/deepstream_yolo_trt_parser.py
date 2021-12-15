@@ -21,6 +21,7 @@ parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE"
 parser.add_argument(
     "--test_video", help="test video file path or uri", type=str, 
     default="/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264")
+parser.add_argument("--batch_size", help="batch size inference", type=int, default=2)
 parser.add_argument("--label_type", help="Label type (flag/nsfw)", type=str, default="flag")
 parser.add_argument("--is_save", help="Save result video output", action="store_true")
 parser.add_argument("--conf", help="Confidence threshold for YOLOv5", type=float, default=0.5)
@@ -40,10 +41,12 @@ IOU_THRESHOLD = args.iou
 IS_DALI = args.is_dali
 test_video = args.test_video
 label_type = args.label_type
+BATCH_SIZE = args.batch_size
 
 
 def ds_pipeline(
     test_video, 
+    batch_size=1,
     conf_threshold=0.5, iou_threshold=0.45, 
     is_save_output=False, 
     outvid_width=1920, outvid_height=1080, 
@@ -140,6 +143,7 @@ if __name__ == "__main__":
     sys.exit(
         ds_pipeline(
             test_video=test_video, 
+            batch_size=BATCH_SIZE,
             conf_threshold=CONF_THRESHOLD,
             iou_threshold=IOU_THRESHOLD,
             is_save_output=IS_SAVE,
