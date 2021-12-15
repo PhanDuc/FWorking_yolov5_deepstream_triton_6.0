@@ -22,7 +22,7 @@ parser.add_argument(
     "--test_video", help="test video file path or uri", type=str, 
     default="/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264")
 parser.add_argument("--skip_frames", help="skip x frames e.g. 0, 10, 20, 30", type=int, default=1)
-parser.add_argument("--batch_size", help="batch size inference", type=int, default=2)
+parser.add_argument("--batch_size", help="batch size inference", type=int, default=1)
 parser.add_argument("--label_type", help="Label type (flag/nsfw)", type=str, default="flag")
 parser.add_argument("--is_save", help="Save result video output", action="store_true")
 parser.add_argument("--conf", help="Confidence threshold for YOLOv5", type=float, default=0.5)
@@ -63,6 +63,7 @@ def ds_pipeline(
     init_t = time.perf_counter()
     # Initialize Pipleline parts
     pl = PipelineParts(
+        skip_frames=skip_frames,
         is_save_output=is_save_output, 
         image_width=outvid_width, image_height=outvid_height, 
         conf_threshold=conf_threshold, nms_threshold=iou_threshold, 
@@ -74,7 +75,7 @@ def ds_pipeline(
 
     # Create gstreamer elements
     # Create Pipeline element that will form a connection of other elements
-    print("Creating Pipeline \n ")
+    logger.info("Creating Pipeline \n ")
     pipeline = Gst.Pipeline()
 
     if not pipeline:
@@ -90,7 +91,7 @@ def ds_pipeline(
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height,
-                is_dali=is_dali)
+                is_dali=is_dali, is_grpc=is_grpc)
         elif "file://" in test_video or "https://" in test_video:
             # uridecoders -> streammux -> triton_infer -> postprocess 
             pipeline, pgie, nvosd = uri_local_pipeline(
@@ -100,7 +101,7 @@ def ds_pipeline(
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 
-                is_dali=is_dali)
+                is_dali=is_dali, is_grpc=is_grpc)
     except Exception as ex:
         logger.error(ex)
         sys.exit(1)
@@ -130,7 +131,7 @@ def ds_pipeline(
     done_init_t = time.perf_counter() - init_t
 
     # start play back and listen to events
-    print("Starting pipeline \n")
+    logger.info("Starting pipeline \n")
     pipeline.set_state(Gst.State.PLAYING)
     
     start_t = time.perf_counter()
@@ -145,7 +146,7 @@ def ds_pipeline(
     
     logger.info(f"Initialize pipeline time: {done_init_t:.5f}")
     logger.info(f"Inference + Postprocess + save (option): {end:.5f}")
-    logger.info(f"elapsed_time: {(done_init_t + end):.5f}")
+    logger.info(f"elapsed time: {(done_init_t + end):.5f}")
 
 
 if __name__ == "__main__":

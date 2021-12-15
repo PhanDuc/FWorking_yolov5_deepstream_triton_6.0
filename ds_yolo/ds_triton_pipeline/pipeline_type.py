@@ -89,7 +89,7 @@ def h264_pipeline(
     else:
         sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
 
-    print("Playing file %s " % test_video_file)
+    logger.info("Playing file %s " % test_video_file)
     source.set_property("location", test_video_file)
     streammux.set_property("width", image_width)
     streammux.set_property("height", image_height)
@@ -111,7 +111,7 @@ def h264_pipeline(
             logger.info("DeepStream GRPC Triton DALI yolov5 tensorRT inference")
             pgie.set_property("config-file-path", grpc_ds_dali_yolo_config)
 
-    print("Adding elements to Pipeline \n")
+    logger.info("Adding elements to Pipeline \n")
     pipeline.add(source)
     pipeline.add(parser)
     pipeline.add(decoder)
@@ -131,17 +131,17 @@ def h264_pipeline(
     # we link the elements together
     # file-source -> h264-parser -> nvh264-decoder ->
     # nvinfer -> nvvidconv -> nvosd -> video-renderer
-    print("Linking elements in the Pipeline \n")
+    logger.info("Linking elements in the Pipeline \n")
     source.link(parser)
     parser.link(decoder)
 
     # streammux link to decoded frame sink_0
     sinkpad = streammux.get_request_pad("sink_0")
     if not sinkpad:
-        sys.stderr.write(" Unable to get the sink pad of streammux \n")
+        logger.opt(colors=True).warning(" Unable to get the sink pad of streammux \n")
     srcpad = decoder.get_static_pad("src")
     if not srcpad:
-        sys.stderr.write(" Unable to get source pad of decoder \n")
+        logger.opt(colors=True).warning(" Unable to get source pad of decoder \n")
     srcpad.link(sinkpad)
     streammux.link(pgie)
 
@@ -165,7 +165,7 @@ def h264_pipeline(
 # PIPELINE FOR URI OR LOCAL VIDEO FILE
 
 def cb_newpad(decodebin, decoder_src_pad, data):
-    print("In cb_newpad\n")
+    logger.info("In cb_newpad\n")
     caps = decoder_src_pad.get_current_caps()
     gststruct = caps.get_structure(0)
     gstname = gststruct.get_name()
@@ -174,23 +174,23 @@ def cb_newpad(decodebin, decoder_src_pad, data):
 
     # Need to check if the pad created by the decodebin is for video and not
     # audio.
-    print("gstname=", gstname)
+    logger.info("gstname=", gstname)
     if gstname.find("video") != -1:
         # Link the decodebin pad only if decodebin has picked nvidia
         # decoder plugin nvdec_*. We do this by checking if the pad caps contain
         # NVMM memory features.
-        print("features=", features)
+        logger.info("features=", features)
         if features.contains("memory:NVMM"):
             # Get the source bin ghost pad
             bin_ghost_pad = source_bin.get_static_pad("src")
             if not bin_ghost_pad.set_target(decoder_src_pad):
-                sys.stderr.write("Failed to link decoder src pad to source bin ghost pad\n")
+                logger.opt(colors=True).warning("Failed to link decoder src pad to source bin ghost pad\n")
         else:
-            sys.stderr.write(" Error: Decodebin did not pick nvidia decoder plugin.\n")
+            logger.opt(colors=True).warning(" Error: Decodebin did not pick nvidia decoder plugin.\n")
 
 
 def decodebin_child_added(child_proxy, Object, name, user_data):
-    print("Decodebin child added:", name, "\n")
+    logger.info("Decodebin child added:", name, "\n")
     if name.find("decodebin") != -1:
         Object.connect("child-added", decodebin_child_added, user_data)
 
@@ -199,22 +199,21 @@ def create_source_bin(uri):
     """
     Decode file video local and URI video input 
     """
-    print("Creating source bin")
+    logger.info("Creating source bin")
 
     # Create a source GstBin to abstract this bin's content from the rest of the
     # pipeline
     bin_name = "source-bin-0"
-    print(bin_name)
     nbin = Gst.Bin.new(bin_name)
     if not nbin:
-        sys.stderr.write(" Unable to create source bin \n")
+        logger.opt(colors=True).warning(" Unable to create source bin \n")
 
     # Source element for reading from the uri.
     # We will use decodebin and let it figure out the container format of the
     # stream and the codec and plug the appropriate demux and decode plugins.
     uri_decode_bin = Gst.ElementFactory.make("uridecodebin", "uri-decode-bin")
     if not uri_decode_bin:
-        sys.stderr.write(" Unable to create uri decode bin \n")
+        logger.opt(colors=True).warning(" Unable to create uri decode bin \n")
     # We set the input uri to the source element
     uri_decode_bin.set_property("uri", uri)
     # Connect to the "pad-added" signal of the decodebin which generates a
@@ -230,7 +229,7 @@ def create_source_bin(uri):
     Gst.Bin.add(nbin, uri_decode_bin)
     bin_pad = nbin.add_pad(Gst.GhostPad.new_no_target("src", Gst.PadDirection.SRC))
     if not bin_pad:
-        sys.stderr.write(" Failed to add ghost pad in source bin \n")
+        logger.opt(colors=True).warning(" Failed to add ghost pad in source bin \n")
         return None
     return nbin
 
@@ -295,11 +294,11 @@ def uri_local_pipeline(
     else:
         sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
 
-    print("Playing URI file %s " % test_video_file)
+    logger.info("Playing URI file %s " % test_video_file)
     uri_name = test_video_file
     source_bin = create_source_bin(uri_name)
     if not source_bin:
-        sys.stderr.write("Unable to create source bin \n")
+        logger.opt(colors=True).warning("Unable to create source bin \n")
     padname = "sink_0"
     
     
@@ -323,7 +322,7 @@ def uri_local_pipeline(
             logger.info("DeepStream GRPC Triton DALI yolov5 tensorRT inference")
             pgie.set_property("config-file-path", grpc_ds_dali_yolo_config)
 
-    print("Adding elements to Pipeline \n")
+    logger.info("Adding elements to Pipeline \n")
     pipeline.add(source_bin)
     pipeline.add(streammux)
     pipeline.add(pgie)
@@ -342,16 +341,16 @@ def uri_local_pipeline(
     # we link the elements together
     # uri -> uridecode bin ->
     # nvinfer -> nvvidconv -> nvosd -> video-renderer
-    print("Linking elements in the Pipeline \n")
+    logger.info("Linking elements in the Pipeline \n")
 
     # streamux link to decode frame by padname
     sinkpad = streammux.get_request_pad(padname)
     if not sinkpad:
-        sys.stderr.write("Unable to create sink pad bin \n")
+        logger.warning("Unable to create sink pad bin \n")
     
     srcpad = source_bin.get_static_pad("src")
     if not srcpad:
-        sys.stderr.write("Unable to create src pad bin \n")
+        logger.warning("Unable to create src pad bin \n")
     
     srcpad.link(sinkpad)
     streammux.link(pgie)

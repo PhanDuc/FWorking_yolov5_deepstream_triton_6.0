@@ -18,7 +18,6 @@ except Exception as ex:
     logger.error(ex)    
 
 file_path = pathlib.Path(__file__).resolve().parents[1]
-print("file_path: ", file_path)
 
 sys.path.append(os.path.abspath(file_path))
 
@@ -29,12 +28,14 @@ from postprocess.trt_postprocess import postprocess
 class PipelineParts():
     def __init__(
         self,   
+        skip_frames=1,
         conf_threshold=0.5, 
         nms_threshold=0.4, 
         is_save_output=True, 
         image_width=1920, image_height=1080, 
         label_type="flag"):
         
+        self.skip_frames = skip_frames
         self.conf_thresh = conf_threshold
         self.nms_thresh = nms_threshold
         self.is_save_output=is_save_output
@@ -51,10 +52,10 @@ class PipelineParts():
             Return the element  if successfully created, otherwise print
             to stderr and return None.
         """
-        print("Creating", printedname)
+        logger.info("Creating", printedname)
         elm = Gst.ElementFactory.make(factoryname, name)
         if not elm:
-            sys.stderr.write("Unable to create " + printedname + " \n")
+            logger.warning("Unable to create " + printedname + " \n")
             if detail:
                 sys.stderr.write(detail)
         return elm
@@ -71,7 +72,7 @@ class PipelineParts():
 
         gst_buffer = info.get_buffer()
         if not gst_buffer:
-            print("Unable to get GstBuffer ")
+            logger.warning("Unable to get GstBuffer ")
             return
 
         # Retrieve batch metadata from the gst_buffer
@@ -89,7 +90,7 @@ class PipelineParts():
             except StopIteration:
                 break
             
-            if frame_meta.frame_num % 10 == 0:
+            if frame_meta.frame_num % self.skip_frames == 0:
                 frame_number = frame_meta.frame_num
                 num_rects = frame_meta.num_obj_meta
             
@@ -127,7 +128,7 @@ class PipelineParts():
                 # set(red, green, blue, alpha); set to Black
                 py_nvosd_text_params.text_bg_clr.set(0.0, 0.0, 0.0, 1.0)
                 # Using pyds.get_string() to get display_text as string
-                print(pyds.get_string(py_nvosd_text_params.display_text))
+                #print(pyds.get_string(py_nvosd_text_params.display_text))
                 pyds.nvds_add_display_meta_to_frame(frame_meta, display_meta)
         
             try:
@@ -212,10 +213,10 @@ class PipelineParts():
         # get the buffer of info argument
         gst_buffer = info.get_buffer()
         if not gst_buffer:
-            print("Unable to get GstBuffer ")
+            logger.warning("Unable to get GstBuffer ")
             return
-        logger.info(f"gst_buffer: {gst_buffer}")
-        logger.info(f"hash gst_buffer: {hash(gst_buffer)}")
+        #logger.info(f"gst_buffer: {gst_buffer}")
+        #logger.info(f"hash gst_buffer: {hash(gst_buffer)}")
 
         # Retrieve batch metadata from the gst_buffer
         # Note that pyds.gst_buffer_get_nvds_batch_meta() expects the
@@ -226,9 +227,9 @@ class PipelineParts():
         
         l_frame = batch_meta.frame_meta_list
 
-        logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
-        logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
-        logger.info(f"l_frame: {l_frame}")
+        #logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
+        #logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
+        #logger.info(f"l_frame: {l_frame}")
         #label_names = self.get_label_names_from_file()
         
         c = 0
@@ -242,10 +243,10 @@ class PipelineParts():
                 #logger.info("frame_meta: {}".format(frame_meta))
             except StopIteration:
                 break
-            if frame_meta.frame_num % 10 == 0:
-                logger.info(f"--> frame_num: {frame_meta.frame_num}")
+            if frame_meta.frame_num % self.skip_frames == 0:
+                #logger.info(f"--> frame_num: {frame_meta.frame_num}")
                 l_user = frame_meta.frame_user_meta_list
-                logger.info(f"l_user: {l_user}")
+                #logger.info(f"l_user: {l_user}")
                 
                 if not self.is_save_output:
                     # get width and height of source video 
@@ -262,7 +263,7 @@ class PipelineParts():
 
                 
                 c += 1
-                print("c: ", c)
+                #print("c: ", c)
                 while l_user is not None:
                     try:
                         # Note that l_user.data needs a cast to pyds.NvDsUserMeta
@@ -291,7 +292,7 @@ class PipelineParts():
                     #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
                     for i in range(tensor_meta.num_output_layers):
                         layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                        logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
+                        #logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
                         # Convert tensor metadata to numpy array
                         ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
                         output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
