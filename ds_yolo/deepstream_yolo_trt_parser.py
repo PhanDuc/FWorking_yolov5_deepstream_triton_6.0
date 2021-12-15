@@ -63,7 +63,7 @@ def ds_pipeline(
     init_t = time.perf_counter()
     # Initialize Pipleline parts
     pl = PipelineParts(
-        skip_frames=skip_frames,
+        #skip_frames=skip_frames,
         is_save_output=is_save_output, 
         image_width=outvid_width, image_height=outvid_height, 
         conf_threshold=conf_threshold, nms_threshold=iou_threshold, 
@@ -88,6 +88,7 @@ def ds_pipeline(
                 pipeline, pl, 
                 test_video, 
                 batch_size=batch_size,
+                skip_frames=skip_frames,
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height,
@@ -98,6 +99,7 @@ def ds_pipeline(
                 pipeline, pl, 
                 test_video, 
                 batch_size=batch_size,
+                skip_frames=skip_frames,
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 

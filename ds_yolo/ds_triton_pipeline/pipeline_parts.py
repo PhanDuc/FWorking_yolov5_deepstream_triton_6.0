@@ -52,12 +52,12 @@ class PipelineParts():
             Return the element  if successfully created, otherwise print
             to stderr and return None.
         """
-        logger.info("Creating", printedname)
+        logger.info("Creating {}".format(printedname))
         elm = Gst.ElementFactory.make(factoryname, name)
         if not elm:
             logger.warning("Unable to create " + printedname + " \n")
             if detail:
-                sys.stderr.write(detail)
+                logger.warning(detail)
         return elm
 
 

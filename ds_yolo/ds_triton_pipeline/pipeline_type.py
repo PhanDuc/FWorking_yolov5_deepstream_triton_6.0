@@ -24,6 +24,7 @@ def h264_pipeline(
     pipeline, pl, 
     test_video_file,
     batch_size=1,  
+    skip_frames=1,
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, 
@@ -94,6 +95,7 @@ def h264_pipeline(
     streammux.set_property("width", image_width)
     streammux.set_property("height", image_height)
     streammux.set_property("batch-size", batch_size)
+    streammux.set_property("interval", skip_frames)
     streammux.set_property("batched-push-timeout", 4000000)
     if not is_dali:
         if not is_grpc:
@@ -237,6 +239,7 @@ def uri_local_pipeline(
     pipeline, pl, 
     test_video_file, 
     batch_size=1, 
+    skip_frames=1, 
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, 
@@ -305,6 +308,7 @@ def uri_local_pipeline(
     streammux.set_property("width", image_width)
     streammux.set_property("height", image_height)
     streammux.set_property("batch-size", batch_size)
+    streammux.set_property("interval", skip_frames)
     streammux.set_property("batched-push-timeout", 4000000)
     if not is_dali:
         if not is_grpc:
