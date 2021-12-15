@@ -342,6 +342,11 @@ class PipelineParts():
         Convert tensor metadata to numpy array 
         Postprocessing 
         """
+        """
+        Get tensor_metadata from triton inference output 
+        Convert tensor metadata to numpy array 
+        Postprocessing 
+        """
         # get the buffer of info argument
         gst_buffer = info.get_buffer()
         if not gst_buffer:
@@ -359,12 +364,12 @@ class PipelineParts():
         
         l_frame = batch_meta.frame_meta_list
 
-        logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
-        logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
+        #logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
+        #logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
         #logger.info(f"l_frame: {l_frame}")
         #label_names = self.get_label_names_from_file()
         
-        
+        c = 0
         while l_frame is not None:
             try:
                 # Note that l_frame.data needs a cast to pyds.NvDsFrameMeta
@@ -375,10 +380,9 @@ class PipelineParts():
                 #logger.info("frame_meta: {}".format(frame_meta))
             except StopIteration:
                 break
-                sys.exit(1)
-
             #logger.info(f"--> frame_num: {frame_meta.frame_num}")
             l_user = frame_meta.frame_user_meta_list
+            #logger.info(f"l_user: {l_user}")
             
             if not self.is_save_output:
                 # get width and height of source video 
@@ -393,9 +397,9 @@ class PipelineParts():
                 height_prp = self.image_height
                 width_prp = self.image_width 
 
-            c = 0    
-            if l_user is None:
-                print("Noning...")
+            
+            c += 1
+            #print("c: ", c)
             while l_user is not None:
                 try:
                     # Note that l_user.data needs a cast to pyds.NvDsUserMeta
@@ -405,17 +409,13 @@ class PipelineParts():
                     user_meta = pyds.NvDsUserMeta.cast(l_user.data)
                 except StopIteration:
                     break
-                    #sys.exit(1)
-                
-                logger.info(f"user_meta.base_meta.batch_meta: {user_meta.base_meta.batch_meta}")
-            
+
                 if (
                         user_meta.base_meta.meta_type
                         != pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META
                 ):
                     #logger.info("user_meta: {}".format(user_meta))
                     continue
-                    #pass
                 
                 # get tensor-meta from triton inference output
                 tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
@@ -428,41 +428,36 @@ class PipelineParts():
                 #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
                 for i in range(tensor_meta.num_output_layers):
                     layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                    logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
+                    #logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
                     # Convert tensor metadata to numpy array
                     ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
                     output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
                     #logger.info(f"--> np_array.shape: {output_np_array.shape}")
                     layers_info.append(layer)
                 #logger.info(f"layers_info: {layers_info}")
+                
+                detected_obj = postprocess(
+                    output_np_array, 
+                    width_prp, height_prp,
+                    conf_threshold=self.conf_thresh, 
+                    nms_threshold=self.nms_thresh)
 
-                for output in np.split(output_np_array, 1): 
-                    detected_obj = postprocess(
-                        output, 
-                        width_prp, height_prp,
-                        conf_threshold=self.conf_thresh, 
-                        nms_threshold=self.nms_thresh)
+                bboxes = [[int(box.x1), int(box.y1), int(box.x2), int(box.y2)] for box in detected_obj]
+                labels = [self.label(int(box.classID)).name for box in detected_obj]
+                scores = [box.confidence for box in detected_obj]
 
-                    bboxes = [[int(box.x1), int(box.y1), int(box.x2), int(box.y2)] for box in detected_obj]
-                    labels = [self.label(int(box.classID)).name for box in detected_obj]
-                    scores = [box.confidence for box in detected_obj]
-
-                    ensemble_results = {
-                        "frame_%s"%frame_meta.frame_num:{
-                            "scores":scores, 
-                            "labels":labels, 
-                            "boxes":bboxes}
-                    }
-                    logger.info(f"--> ensemble_result: {ensemble_results}")
+                ensemble_results = {
+                    "frame_%s"%frame_meta.frame_num:{
+                        "scores":scores, 
+                        "labels":labels, 
+                        "boxes":bboxes}
+                }
+                logger.info(f"--> ensemble_result: {ensemble_results}")
 
                 try:
                     l_user = l_user.next
                 except StopIteration:
                     break
-
-                c += 1
-                print("c: ", c)
-                
 
                 
                 
