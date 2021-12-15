@@ -54,5 +54,5 @@ input_control {
 output_control {
   output_tensor_meta: true
 }
-async_mode: false
+#async_mode: false
 
