@@ -359,8 +359,8 @@ class PipelineParts():
         
         l_frame = batch_meta.frame_meta_list
 
-        #logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
-        #logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
+        logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
+        logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
         #logger.info(f"l_frame: {l_frame}")
         #label_names = self.get_label_names_from_file()
         
@@ -378,7 +378,6 @@ class PipelineParts():
 
         #logger.info(f"--> frame_num: {frame_meta.frame_num}")
         l_user = frame_meta.frame_user_meta_list
-        #logger.info(f"l_user: {l_user}")
         
         if not self.is_save_output:
             # get width and height of source video 
@@ -404,7 +403,9 @@ class PipelineParts():
             except StopIteration:
                 #break
                 sys.exit(1)
-
+            
+            logger.info(f"user_meta.base_meta.batch_meta: {user_meta.base_meta.batch_meta}")
+        
             if (
                     user_meta.base_meta.meta_type
                     != pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META
