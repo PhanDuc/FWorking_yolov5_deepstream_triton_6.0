@@ -228,6 +228,8 @@ class PipelineParts():
         logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
         logger.info(f"l_frame: {l_frame}")
         #label_names = self.get_label_names_from_file()
+        for frame_meta in l_frame:
+            logger.info(f"frame_meta: {frame_meta}")
 
         
         while l_frame is not None:
