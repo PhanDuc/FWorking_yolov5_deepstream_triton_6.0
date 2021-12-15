@@ -374,6 +374,7 @@ class PipelineParts():
                 frame_meta = pyds.NvDsFrameMeta.cast(l_frame.data)
                 #logger.info("frame_meta: {}".format(frame_meta))
             except StopIteration:
+                break
                 sys.exit(1)
 
             #logger.info(f"--> frame_num: {frame_meta.frame_num}")
@@ -403,8 +404,8 @@ class PipelineParts():
                     # it alone.
                     user_meta = pyds.NvDsUserMeta.cast(l_user.data)
                 except StopIteration:
-                    #break
-                    sys.exit(1)
+                    break
+                    #sys.exit(1)
                 
                 logger.info(f"user_meta.base_meta.batch_meta: {user_meta.base_meta.batch_meta}")
             
@@ -413,8 +414,8 @@ class PipelineParts():
                         != pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META
                 ):
                     #logger.info("user_meta: {}".format(user_meta))
-                    #continue
-                    pass
+                    continue
+                    #pass
                 
                 # get tensor-meta from triton inference output
                 tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
@@ -465,8 +466,8 @@ class PipelineParts():
 
                 
                 
-        #try:
-        #    l_frame = l_frame.next
-        #except StopIteration:
-        #    break
+            try:
+                l_frame = l_frame.next
+            except StopIteration:
+                break
         return Gst.PadProbeReturn.OK
