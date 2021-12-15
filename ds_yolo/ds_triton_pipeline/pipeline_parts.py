@@ -394,8 +394,6 @@ class PipelineParts():
             width_prp = self.image_width 
 
             
-        c += 1
-        print("c: ", c)
         while l_user is not None:
             try:
                 # Note that l_user.data needs a cast to pyds.NvDsUserMeta
@@ -424,7 +422,7 @@ class PipelineParts():
             #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
             for i in range(tensor_meta.num_output_layers):
                 layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                #logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
+                logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
                 # Convert tensor metadata to numpy array
                 ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
                 output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
@@ -454,6 +452,10 @@ class PipelineParts():
                 l_user = l_user.next
             except StopIteration:
                 break
+
+            c += 1
+            print("c: ", c)
+        
 
             
                 
