@@ -394,44 +394,47 @@ class PipelineParts():
             width_prp = self.image_width 
 
             
-        while l_user is not None:
-            try:
-                # Note that l_user.data needs a cast to pyds.NvDsUserMeta
-                # The casting also keeps ownership of the underlying memory
-                # in the C code, so the Python garbage collector will leave
-                # it alone.
-                user_meta = pyds.NvDsUserMeta.cast(l_user.data)
-            except StopIteration:
-                break
+        #while l_user is not None:
+        try:
+            # Note that l_user.data needs a cast to pyds.NvDsUserMeta
+            # The casting also keeps ownership of the underlying memory
+            # in the C code, so the Python garbage collector will leave
+            # it alone.
+            user_meta = pyds.NvDsUserMeta.cast(l_user.data)
+        except StopIteration:
+            #break
+            sys.exit(1)
 
-            if (
-                    user_meta.base_meta.meta_type
-                    != pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META
-            ):
-                #logger.info("user_meta: {}".format(user_meta))
-                continue
-            
-            # get tensor-meta from triton inference output
-            tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
-            #logger.info("tensor_meta: {}".format(tensor_meta))
+        if (
+                user_meta.base_meta.meta_type
+                != pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META
+        ):
+            #logger.info("user_meta: {}".format(user_meta))
+            #continue
+            pass
+        
+        # get tensor-meta from triton inference output
+        tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
+        #logger.info("tensor_meta: {}".format(tensor_meta))
 
-            # Boxes in the tensor meta should be in network resolution which is
-            # found in tensor_meta.network_info. Use this info to scale boxes to
-            # the input frame resolution.
-            layers_info = []
-            #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
-            for i in range(tensor_meta.num_output_layers):
-                layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
-                # Convert tensor metadata to numpy array
-                ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
-                output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
-                #logger.info(f"--> np_array.shape: {output_np_array.shape}")
-                layers_info.append(layer)
-            #logger.info(f"layers_info: {layers_info}")
-            
+        # Boxes in the tensor meta should be in network resolution which is
+        # found in tensor_meta.network_info. Use this info to scale boxes to
+        # the input frame resolution.
+        layers_info = []
+        #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
+        for i in range(tensor_meta.num_output_layers):
+            layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
+            logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
+            # Convert tensor metadata to numpy array
+            ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
+            output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
+            #logger.info(f"--> np_array.shape: {output_np_array.shape}")
+            layers_info.append(layer)
+        #logger.info(f"layers_info: {layers_info}")
+
+        for output in np.split(output_np_array, 2): 
             detected_obj = postprocess(
-                output_np_array, 
+                output, 
                 width_prp, height_prp,
                 conf_threshold=self.conf_thresh, 
                 nms_threshold=self.nms_thresh)

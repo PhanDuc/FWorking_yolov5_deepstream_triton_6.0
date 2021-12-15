@@ -49,7 +49,7 @@ infer_config {
 }
 input_control {
   process_mode: PROCESS_MODE_FULL_FRAME
-  interval: 0 # skip_frames arguments
+  interval: 10 # skip_frames arguments
 }
 output_control {
   output_tensor_meta: true
