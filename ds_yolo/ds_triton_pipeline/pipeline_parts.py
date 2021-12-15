@@ -455,10 +455,10 @@ class PipelineParts():
                     }
                     logger.info(f"--> ensemble_result: {ensemble_results}")
 
-                    try:
-                        l_user = l_user.next
-                    except StopIteration:
-                        break
+                try:
+                    l_user = l_user.next
+                except StopIteration:
+                    break
 
                 c += 1
                 print("c: ", c)
