@@ -13,14 +13,15 @@ from loguru import logger
 
 from common.bus_call import bus_call
 
-from pipeline_parts import PipelineParts
-from pipeline_type import h264_pipeline, uri_local_pipeline
+from ds_triton_pipeline.pipeline_parts import PipelineParts
+from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline
 
 
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
 parser.add_argument(
     "--test_video", help="test video file path or uri", type=str, 
     default="/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264")
+parser.add_argument("--skip_frames", help="skip x frames e.g. 0, 10, 20, 30", type=int, default=1)
 parser.add_argument("--batch_size", help="batch size inference", type=int, default=2)
 parser.add_argument("--label_type", help="Label type (flag/nsfw)", type=str, default="flag")
 parser.add_argument("--is_save", help="Save result video output", action="store_true")
@@ -29,6 +30,8 @@ parser.add_argument("--iou", help="IOU threshold", type=float, default=0.45)
 parser.add_argument("--outvid_width", help="VIDEO OUTPUT WIDTH", type=int, default=1920)
 parser.add_argument("--outvid_height", help="VIDEO OUTPUT_HEIGHT", type=int, default=1080)
 parser.add_argument("--is_dali", help="DeepStream Triton DALI yolov5 trt, use dali for preprocessing", action="store_true")
+parser.add_argument(
+    "--is_grpc", help="Don't use DeepStream Triton Docker, use seperately DeepStream and Triton that need GRPC protocol for communicate", action="store_true")
 
 args = parser.parse_args()
 
@@ -39,18 +42,22 @@ OUTPUT_VIDEO_NAME = "./ds_triton_yolov5_trt_out.mp4"
 CONF_THRESHOLD = args.conf
 IOU_THRESHOLD = args.iou
 IS_DALI = args.is_dali
+IS_GRPC = args.is_grpc
 test_video = args.test_video
 label_type = args.label_type
 BATCH_SIZE = args.batch_size
+SKIP_FRAMES = args.skip_frames
 
 
 def ds_pipeline(
     test_video, 
+    skip_frames=1,
     batch_size=1,
     conf_threshold=0.5, iou_threshold=0.45, 
     is_save_output=False, 
     outvid_width=1920, outvid_height=1080, 
     is_dali=False, 
+    is_grpc=False,
     output_video_name="./ds_triton_yolov5_trt_out.mp4", 
     label_type="flag"):
     init_t = time.perf_counter()
@@ -145,6 +152,7 @@ if __name__ == "__main__":
     sys.exit(
         ds_pipeline(
             test_video=test_video, 
+            skip_frames=SKIP_FRAMES,
             batch_size=BATCH_SIZE,
             conf_threshold=CONF_THRESHOLD,
             iou_threshold=IOU_THRESHOLD,
@@ -152,6 +160,7 @@ if __name__ == "__main__":
             outvid_width=IMAGE_WIDTH,
             outvid_height=IMAGE_HEIGHT,
             is_dali=IS_DALI,
+            is_grpc=IS_GRPC,
             output_video_name=OUTPUT_VIDEO_NAME,
             label_type=label_type
         ))

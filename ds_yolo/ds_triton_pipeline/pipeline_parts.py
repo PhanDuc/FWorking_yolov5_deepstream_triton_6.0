@@ -1,18 +1,29 @@
 import ctypes
 import gi
 import numpy as np
+import os
 import io 
+import pathlib
 import pyds
 import sys
 
-sys.path.append('/opt/nvidia/deepstream/deepstream/lib')
-
 gi.require_version("Gst", "1.0")
 from gi.repository import GObject, GLib, Gst
+
 from loguru import logger
 
-from labels import NSFWLabels, FlagLabels
-from trt_postprocess import postprocess
+try:
+    sys.path.append('/opt/nvidia/deepstream/deepstream/lib')
+except Exception as ex:
+    logger.error(ex)    
+
+file_path = pathlib.Path(__file__).resolve().parents[1]
+print("file_path: ", file_path)
+
+sys.path.append(os.path.abspath(file_path))
+
+from postprocess.labels import NSFWLabels, FlagLabels
+from postprocess.trt_postprocess import postprocess
 
 
 class PipelineParts():
@@ -81,18 +92,7 @@ class PipelineParts():
             if frame_meta.frame_num % 10 == 0:
                 frame_number = frame_meta.frame_num
                 num_rects = frame_meta.num_obj_meta
-                l_obj = frame_meta.obj_meta_list
-                while l_obj is not None:
-                    try:
-                        # Casting l_obj.data to pyds.NvDsObjectMeta
-                        obj_meta = pyds.NvDsObjectMeta.cast(l_obj.data)
-                    except StopIteration:
-                        break
-                    try:
-                        l_obj = l_obj.next
-                    except StopIteration:
-                        break
-
+            
                 # Acquiring a display meta object. The memory ownership remains in
                 # the C code so downstream plugins can still access it. Otherwise
                 # the garbage collector will claim it when this probe function exits.

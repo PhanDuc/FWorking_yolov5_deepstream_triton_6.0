@@ -1,9 +1,22 @@
 import gi  
+import os
+import pathlib
 import sys
+
+file_path = pathlib.Path(__file__).resolve().parents[1]
+
+sys.path.append(os.path.abspath(file_path))
 
 gi.require_version("Gst", "1.0")
 from gi.repository import GObject, GLib, Gst
 from loguru import logger
+
+config_path = os.path.join(file_path, "config_ds_triton_infer")
+ds_dali_yolo_config = os.path.join(config_path, "ds_dali_yolov5_trt_nopostprocess.txt")
+ds_yolo_config = os.path.join(config_path, "ds_yolov5_trt_nopostprocess.txt")
+grpc_ds_dali_yolo_config = os.path.join(config_path, "grpc_ds_dali_yolov5_trt_nopostprocess.txt")
+grpc_ds_yolo_config = os.path.join(config_path, "grpc_ds_yolov5_trt_nopostprocess.txt")
+
 
 # PIPELINE FOR H264 DEEPSTREAM TRITON INFERENCE
 
@@ -13,7 +26,8 @@ def h264_pipeline(
     batch_size=1,  
     is_save_output=True, 
     output_video_name="./out.mp4", 
-    image_width=1920, image_height=1080, is_dali=False):
+    image_width=1920, image_height=1080, 
+    is_dali=False, is_grpc=False):
     """
     Build pipeline for inference h264 stream video input
     """
@@ -82,11 +96,20 @@ def h264_pipeline(
     streammux.set_property("batch-size", batch_size)
     streammux.set_property("batched-push-timeout", 4000000)
     if not is_dali:
-        logger.info("DeepStream Triton yolov5 tensorRT inference")
-        pgie.set_property("config-file-path", "ds_yolov5_trt_nopostprocess.txt")
+        if not is_grpc:
+            logger.info("DeepStream Triton yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", ds_yolo_config)
+        else:
+            logger.info("DeepStream GRPC Triton yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", grpc_ds_yolo_config)
     else:
-        logger.info("DeepStream Triton DALI yolov5 tensorRT inference")
-        pgie.set_property("config-file-path", "ds_dali_yolov5_trt_nopostprocess.txt")
+        if not is_grpc:
+            logger.info("DeepStream Triton DALI yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", ds_dali_yolo_config)
+        else:
+
+            logger.info("DeepStream GRPC Triton DALI yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", grpc_ds_dali_yolo_config)
 
     print("Adding elements to Pipeline \n")
     pipeline.add(source)
@@ -218,7 +241,8 @@ def uri_local_pipeline(
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, 
-    is_dali=False):
+    is_dali=False,
+    is_grpc=False):
     """
     Build Pipeline for inference mp4 and URI video 
     """
@@ -284,11 +308,20 @@ def uri_local_pipeline(
     streammux.set_property("batch-size", batch_size)
     streammux.set_property("batched-push-timeout", 4000000)
     if not is_dali:
-        logger.info("DeepStream Triton yolov5 tensorRT inference")
-        pgie.set_property("config-file-path", "ds_yolov5_trt_nopostprocess.txt")
+        if not is_grpc:
+            logger.info("DeepStream Triton yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", ds_yolo_config)
+        else:
+            logger.info("DeepStream GRPC Triton yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", grpc_ds_yolo_config)
     else:
-        logger.info("DeepStream Triton DALI yolov5 tensorRT inference")
-        pgie.set_property("config-file-path", "ds_dali_yolov5_trt_nopostprocess.txt")
+        if not is_grpc:
+            logger.info("DeepStream Triton DALI yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", ds_dali_yolo_config)
+        else:
+
+            logger.info("DeepStream GRPC Triton DALI yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", grpc_ds_dali_yolo_config)
 
     print("Adding elements to Pipeline \n")
     pipeline.add(source_bin)
