@@ -79,6 +79,7 @@ def ds_pipeline(
             pipeline, pgie, nvosd = h264_pipeline(
                 pipeline, pl, 
                 test_video, 
+                batch_size=batch_size,
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height,
@@ -88,6 +89,7 @@ def ds_pipeline(
             pipeline, pgie, nvosd = uri_local_pipeline(
                 pipeline, pl, 
                 test_video, 
+                batch_size=batch_size,
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 
