@@ -21,3 +21,5 @@ class HorrorLabels(Enum):
 if __name__ == "__main__":
     x = FlagLabels(0).name
     print(x)
+
+    

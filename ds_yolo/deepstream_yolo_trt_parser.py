@@ -19,7 +19,7 @@ from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline
 
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
 parser.add_argument(
-    "--test_video", help="test video file path or uri", type=str, 
+    "--test_video", help="single or multi test video file path or uri", type=str, nargs="+",  
     default="/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264")
 parser.add_argument("--skip_frames", help="skip x frames e.g. 0, 10, 20, 30", type=int, default=1)
 parser.add_argument("--batch_size", help="batch size inference", type=int, default=1)

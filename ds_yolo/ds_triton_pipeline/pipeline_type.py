@@ -296,18 +296,35 @@ def uri_local_pipeline(
     else:
         sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
 
-    logger.info("Playing URI file %s " % test_video_file)
-    uri_name = test_video_file
-    source_bin = create_source_bin(uri_name)
-    if not source_bin:
-        logger.opt(colors=True).warning("Unable to create source bin \n")
-    padname = "sink_0"
+    logger.info("Playing %s MP4 or URI file %s " % (len(test_video_file), ("  ").join(test_video_file)))
+    for idx in range(len(test_video_file)):
+        uri_name = test_video_file[idx]
+        source_bin = create_source_bin(uri_name)
+        if not source_bin:
+            logger.opt(colors=True).warning("Unable to create source bin \n")
+        padname = "sink_%s"%idx
+        
+        # streamux link to decode frame by padname
+        sinkpad = streammux.get_request_pad(padname)
+        if not sinkpad:
+            logger.warning("Unable to create sink pad bin \n")
+        
+        srcpad = source_bin.get_static_pad("src")
+        if not srcpad:
+            logger.warning("Unable to create src pad bin \n")
+        
+        srcpad.link(sinkpad)
+    
     
     
     streammux.set_property("width", image_width)
     streammux.set_property("height", image_height)
-    streammux.set_property("batch-size", batch_size)
+    if len(test_video_file) == 1:
+        streammux.set_property("batch-size", batch_size)
+    else:
+        streammux.set_property("batch-size", len(test_video_file))
     streammux.set_property("batched-push-timeout", 4000000)
+
     if not is_dali:
         if not is_grpc:
             logger.info("DeepStream Triton yolov5 tensorRT inference")
@@ -345,16 +362,6 @@ def uri_local_pipeline(
     # nvinfer -> nvvidconv -> nvosd -> video-renderer
     logger.info("Linking elements in the Pipeline \n")
 
-    # streamux link to decode frame by padname
-    sinkpad = streammux.get_request_pad(padname)
-    if not sinkpad:
-        logger.warning("Unable to create sink pad bin \n")
-    
-    srcpad = source_bin.get_static_pad("src")
-    if not srcpad:
-        logger.warning("Unable to create src pad bin \n")
-    
-    srcpad.link(sinkpad)
     streammux.link(pgie)
     if is_save_output:
         pgie.link(nvvidconv)
