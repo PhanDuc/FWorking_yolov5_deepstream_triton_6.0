@@ -193,7 +193,7 @@ def cb_newpad(decodebin, decoder_src_pad, data):
 
 
 def decodebin_child_added(child_proxy, Object, name, user_data):
-    logger.info("Decodebin child added: {name} \n")
+    logger.info(f"Decodebin child added: {name} \n")
     if name.find("decodebin") != -1:
         Object.connect("child-added", decodebin_child_added, user_data)
 
