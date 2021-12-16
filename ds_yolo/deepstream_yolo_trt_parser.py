@@ -15,7 +15,7 @@ from loguru import logger
 from common.bus_call import bus_call
 
 from ds_triton_pipeline.pipeline_parts import PipelineParts
-from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline
+from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline, image_pipeline
 
 
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
@@ -105,7 +105,12 @@ def ds_pipeline(
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 
                 is_dali=is_dali, is_grpc=is_grpc)
-
+        elif os.path.isdir(test_video[0]):
+            pipeline, pgie = image_pipeline(
+                pipeline, pl, 
+                test_video, 
+                batch_size=batch_size, 
+                image_width=outvid_width, image_height=outvid_height)
 
     except Exception as ex:
         logger.error(ex)

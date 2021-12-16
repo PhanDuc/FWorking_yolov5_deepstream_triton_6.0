@@ -394,3 +394,80 @@ def uri_local_pipeline(
         logger.error("ERROR: %s" % ex)
 
 
+
+# --------------------------------------------------------------------------------------------------------
+# PIPELINE FOR JPEG IMAGE DEEPSTREAM TRITON INFERENCE
+def image_pipeline(    
+    pipeline, pl, 
+    test_video_file,
+    batch_size=1,  
+    skip_frames=1,
+    is_save_output=True, 
+    output_video_name="./out.mp4", 
+    image_width=1920, image_height=1080, 
+    is_dali=False, is_grpc=False):
+    # Source element for reading from the file
+    print("Creating Source \n ")
+    source = pl.make_elm_or_print_err("filesrc", "file-source", "Source")
+    
+    # Since the data format in the input file is jpeg,
+    # we need a jpegparser
+    print("Creating jpegParser \n")
+    jpegparser = pl.make_elm_or_print_err("jpegparse", "jpeg-parser", "JPEGParser")
+    
+    # Use nvdec for hardware accelerated decode on GPU
+    print("Creating Decoder \n")
+    decoder = pl.make_elm_or_print_err("nvv4l2decoder", "nvv4l2-decoder", "Decoder")
+    
+    # Create nvstreammux instance to form batches from one or more sources.
+    streammux = pl.make_elm_or_print_err("nvstreammux", "Stream-muxer", "NvStreamMux")
+    
+    # Create segmentation for primary inference
+    pgie = pl.make_elm_or_print_err("nvinferserver", "primary-inference", "Nvinferserver")
+
+    sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
+
+    
+    print("Playing file %s " % test_video_file)
+    source.set_property('location', test_video_file)
+
+    streammux.set_property('width', image_width)
+    streammux.set_property('height', image_height)
+    streammux.set_property('batch-size', batch_size)
+    streammux.set_property('batched-push-timeout', 4000000)
+    pgie.set_property('config-file-path', ds_yolo_config)
+    pgie_batch_size = pgie.get_property("batch-size")
+    if pgie_batch_size != 1:
+        print("WARNING: Overriding infer-config batch-size", pgie_batch_size,
+              " with number of sources ", 1,
+              " \n")
+        pgie.set_property("batch-size", 1)
+    
+    sink.set_property("qos", 0)
+    print("Adding elements to Pipeline \n")
+    pipeline.add(source)
+    pipeline.add(jpegparser)
+    pipeline.add(decoder)
+    pipeline.add(streammux)
+    pipeline.add(pgie)
+    pipeline.add(sink)
+
+    # we link the elements together
+    # file-source -> jpeg-parser -> nvv4l2-decoder ->
+    # nvinfer -> nvsegvisual -> sink
+    print("Linking elements in the Pipeline \n")
+    source.link(jpegparser)
+    jpegparser.link(decoder)
+
+    sinkpad = streammux.get_request_pad("sink_0")
+    if not sinkpad:
+        logger.warning(" Unable to get the sink pad of streammux \n")
+    srcpad = decoder.get_static_pad("src")
+    if not srcpad:
+        logger.warning(" Unable to get source pad of decoder \n")
+    srcpad.link(sinkpad)
+    streammux.link(pgie)
+    pgie.link(sink)
+    
+    return pipeline, pgie
+    
