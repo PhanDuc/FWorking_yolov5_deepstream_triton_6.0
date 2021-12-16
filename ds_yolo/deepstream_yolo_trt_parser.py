@@ -1,4 +1,5 @@
 import argparse
+import os
 import pyds
 import time
 import sys
@@ -14,7 +15,7 @@ from loguru import logger
 from common.bus_call import bus_call
 
 from ds_triton_pipeline.pipeline_parts import PipelineParts
-from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline
+from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline, image_pipeline
 
 
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
@@ -103,7 +104,7 @@ def ds_pipeline(
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 
-                is_dali=is_dali, is_grpc=is_grpc)
+                is_dali=is_dali, is_grpc=is_grpc) 
     except Exception as ex:
         logger.error(ex)
         sys.exit(1)
