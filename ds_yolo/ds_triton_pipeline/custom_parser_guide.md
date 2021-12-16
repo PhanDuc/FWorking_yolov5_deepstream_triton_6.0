@@ -128,7 +128,7 @@ This object has the following methods and members:
 
 Below is a general explanation of the deepstream-ssd-parser sample application. See comments in the code for additional details.
 
-* This function takes a path to a file media or uri.
+* Takes a path to a file media or uri.
 
 * Gstreamer initialization is performed.
 

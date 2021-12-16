@@ -1,29 +1,42 @@
 import ctypes
 import gi
 import numpy as np
+import os
 import io 
+import pathlib
 import pyds
 import sys
 
-sys.path.append('/opt/nvidia/deepstream/deepstream/lib')
-
 gi.require_version("Gst", "1.0")
 from gi.repository import GObject, GLib, Gst
+
 from loguru import logger
 
-from labels import NSFWLabels, FlagLabels
-from trt_postprocess import postprocess
+try:
+    sys.path.append('/opt/nvidia/deepstream/deepstream/lib')
+except Exception as ex:
+    logger.error(ex)    
+
+file_path = pathlib.Path(__file__).resolve().parents[1]
+
+sys.path.append(os.path.abspath(file_path))
+
+from postprocess.labels import NSFWLabels, FlagLabels
+from postprocess.trt_postprocess import postprocess
+
 
 
 class PipelineParts():
     def __init__(
         self,   
+        skip_frames=1,
         conf_threshold=0.5, 
         nms_threshold=0.4, 
         is_save_output=True, 
         image_width=1920, image_height=1080, 
         label_type="flag"):
         
+        self.skip_frames = skip_frames
         self.conf_thresh = conf_threshold
         self.nms_thresh = nms_threshold
         self.is_save_output=is_save_output
@@ -34,18 +47,20 @@ class PipelineParts():
             self.label = FlagLabels
         elif label_type == "nsfw":
             self.label = NSFWLabels
+
+        self.extracted_frame = 0
         
     def make_elm_or_print_err(self, factoryname, name, printedname, detail=""):
         """ Creates an element with Gst Element Factory make.
             Return the element  if successfully created, otherwise print
             to stderr and return None.
         """
-        print("Creating", printedname)
+        logger.info("Creating {}".format(printedname))
         elm = Gst.ElementFactory.make(factoryname, name)
         if not elm:
-            sys.stderr.write("Unable to create " + printedname + " \n")
+            logger.warning("Unable to create " + printedname + " \n")
             if detail:
-                sys.stderr.write(detail)
+                logger.warning(detail)
         return elm
 
 
@@ -60,7 +75,7 @@ class PipelineParts():
 
         gst_buffer = info.get_buffer()
         if not gst_buffer:
-            print("Unable to get GstBuffer ")
+            logger.warning("Unable to get GstBuffer ")
             return
 
         # Retrieve batch metadata from the gst_buffer
@@ -77,57 +92,48 @@ class PipelineParts():
                 frame_meta = pyds.NvDsFrameMeta.cast(l_frame.data)
             except StopIteration:
                 break
-
-            frame_number = frame_meta.frame_num
-            num_rects = frame_meta.num_obj_meta
-            l_obj = frame_meta.obj_meta_list
-            while l_obj is not None:
-                try:
-                    # Casting l_obj.data to pyds.NvDsObjectMeta
-                    obj_meta = pyds.NvDsObjectMeta.cast(l_obj.data)
-                except StopIteration:
-                    break
-                try:
-                    l_obj = l_obj.next
-                except StopIteration:
-                    break
-
-            # Acquiring a display meta object. The memory ownership remains in
-            # the C code so downstream plugins can still access it. Otherwise
-            # the garbage collector will claim it when this probe function exits.
-            display_meta = pyds.nvds_acquire_display_meta_from_pool(batch_meta)
-            display_meta.num_labels = 1
-            py_nvosd_text_params = display_meta.text_params[0]
-            # Setting display text to be shown on screen
-            # Note that the pyds module allocates a buffer for the string, and the
-            # memory will not be claimed by the garbage collector.
-            # Reading the display_text field here will return the C address of the
-            # allocated string. Use pyds.get_string() to get the string content.
-
-            disp_string = "Frame Number={} Number of Objects={}"
             
-            py_nvosd_text_params.display_text = disp_string.format(
-                frame_number,
-                num_rects,
-            )
+            if frame_meta.frame_num % self.skip_frames == 0:
+                frame_number = frame_meta.frame_num
+                num_rects = frame_meta.num_obj_meta
+            
+                # Acquiring a display meta object. The memory ownership remains in
+                # the C code so downstream plugins can still access it. Otherwise
+                # the garbage collector will claim it when this probe function exits.
+                display_meta = pyds.nvds_acquire_display_meta_from_pool(batch_meta)
+                display_meta.num_labels = 1
+                py_nvosd_text_params = display_meta.text_params[0]
+                # Setting display text to be shown on screen
+                # Note that the pyds module allocates a buffer for the string, and the
+                # memory will not be claimed by the garbage collector.
+                # Reading the display_text field here will return the C address of the
+                # allocated string. Use pyds.get_string() to get the string content.
 
-            # Now set the offsets where the string should appear
-            py_nvosd_text_params.x_offset = 10
-            py_nvosd_text_params.y_offset = 12
+                disp_string = "Frame Number={} Number of Objects={}"
+                
+                py_nvosd_text_params.display_text = disp_string.format(
+                    frame_number,
+                    num_rects,
+                )
 
-            # Font , font-color and font-size
-            py_nvosd_text_params.font_params.font_name = "Serif"
-            py_nvosd_text_params.font_params.font_size = 10
-            # set(red, green, blue, alpha); set to White
-            py_nvosd_text_params.font_params.font_color.set(1.0, 1.0, 1.0, 1.0)
+                # Now set the offsets where the string should appear
+                py_nvosd_text_params.x_offset = 10
+                py_nvosd_text_params.y_offset = 12
 
-            # Text background color
-            py_nvosd_text_params.set_bg_clr = 1
-            # set(red, green, blue, alpha); set to Black
-            py_nvosd_text_params.text_bg_clr.set(0.0, 0.0, 0.0, 1.0)
-            # Using pyds.get_string() to get display_text as string
-            print(pyds.get_string(py_nvosd_text_params.display_text))
-            pyds.nvds_add_display_meta_to_frame(frame_meta, display_meta)
+                # Font , font-color and font-size
+                py_nvosd_text_params.font_params.font_name = "Serif"
+                py_nvosd_text_params.font_params.font_size = 10
+                # set(red, green, blue, alpha); set to White
+                py_nvosd_text_params.font_params.font_color.set(1.0, 1.0, 1.0, 1.0)
+
+                # Text background color
+                py_nvosd_text_params.set_bg_clr = 1
+                # set(red, green, blue, alpha); set to Black
+                py_nvosd_text_params.text_bg_clr.set(0.0, 0.0, 0.0, 1.0)
+                # Using pyds.get_string() to get display_text as string
+                #print(pyds.get_string(py_nvosd_text_params.display_text))
+                pyds.nvds_add_display_meta_to_frame(frame_meta, display_meta)
+        
             try:
                 l_frame = l_frame.next
             except StopIteration:
@@ -210,8 +216,10 @@ class PipelineParts():
         # get the buffer of info argument
         gst_buffer = info.get_buffer()
         if not gst_buffer:
-            print("Unable to get GstBuffer ")
+            logger.warning("Unable to get GstBuffer ")
             return
+        #logger.info(f"gst_buffer: {gst_buffer}")
+        #logger.info(f"hash gst_buffer: {hash(gst_buffer)}")
 
         # Retrieve batch metadata from the gst_buffer
         # Note that pyds.gst_buffer_get_nvds_batch_meta() expects the
@@ -222,9 +230,12 @@ class PipelineParts():
         
         l_frame = batch_meta.frame_meta_list
 
+        #logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
+        #logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
+        #logger.info(f"l_frame: {l_frame}")
         #label_names = self.get_label_names_from_file()
-
         
+        c = 0
         while l_frame is not None:
             try:
                 # Note that l_frame.data needs a cast to pyds.NvDsFrameMeta
@@ -235,8 +246,9 @@ class PipelineParts():
                 #logger.info("frame_meta: {}".format(frame_meta))
             except StopIteration:
                 break
-            
+            #logger.info(f"--> frame_num: {frame_meta.frame_num}")
             l_user = frame_meta.frame_user_meta_list
+            #logger.info(f"l_user: {l_user}")
             
             if not self.is_save_output:
                 # get width and height of source video 
@@ -252,7 +264,8 @@ class PipelineParts():
                 width_prp = self.image_width 
 
             
-            
+            c += 1
+            #print("c: ", c)
             while l_user is not None:
                 try:
                     # Note that l_user.data needs a cast to pyds.NvDsUserMeta
@@ -281,7 +294,7 @@ class PipelineParts():
                 #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
                 for i in range(tensor_meta.num_output_layers):
                     layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                    
+                    #logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
                     # Convert tensor metadata to numpy array
                     ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
                     output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
@@ -307,6 +320,8 @@ class PipelineParts():
                 }
                 logger.info(f"--> ensemble_result: {ensemble_results}")
 
+                self.extracted_frame += 1
+
                 try:
                     l_user = l_user.next
                 except StopIteration:
@@ -318,7 +333,146 @@ class PipelineParts():
                         #logger.info(f"bounding box: {bbox}")
                         self.add_obj_meta_to_frame(bbox, score, label, batch_meta, frame_meta)
 
+                
+            try:
+                l_frame = l_frame.next
+            except StopIteration:
+                break
+        return Gst.PadProbeReturn.OK
+
+
+    def pgie_src_pad_buffer_probe_batch_size(self, pad, info, u_data):
+        """
+        Get tensor_metadata from triton inference output 
+        Convert tensor metadata to numpy array 
+        Postprocessing 
+        """
+        """
+        Get tensor_metadata from triton inference output 
+        Convert tensor metadata to numpy array 
+        Postprocessing 
+        """
+        # get the buffer of info argument
+        gst_buffer = info.get_buffer()
+        if not gst_buffer:
+            logger.warning("Unable to get GstBuffer ")
+            return
+        #logger.info(f"gst_buffer: {gst_buffer}")
+        #logger.info(f"hash gst_buffer: {hash(gst_buffer)}")
+
+        # Retrieve batch metadata from the gst_buffer
+        # Note that pyds.gst_buffer_get_nvds_batch_meta() expects the
+        # C address of gst_buffer as input, which is obtained with hash(gst_buffer)
+        batch_meta = pyds.gst_buffer_get_nvds_batch_meta(hash(gst_buffer))
+        
+        #logger.info("batch_meta: {}".format(batch_meta))
+        
+        l_frame = batch_meta.frame_meta_list
+
+        logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
+        #logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
+        #logger.info(f"l_frame: {l_frame}")
+        #label_names = self.get_label_names_from_file()
+        
+        c = 0
+        while l_frame is not None:
+            try:
+                # Note that l_frame.data needs a cast to pyds.NvDsFrameMeta
+                # The casting also keeps ownership of the underlying memory
+                # in the C code, so the Python garbage collector will leave
+                # it alone.
+                frame_meta = pyds.NvDsFrameMeta.cast(l_frame.data)
+                #logger.info("frame_meta: {}".format(frame_meta))
+            except StopIteration:
+                break
+            #logger.info(f"--> frame_num: {frame_meta.frame_num}")
+            l_user = frame_meta.frame_user_meta_list
+            #logger.info(f"l_user: {l_user}")
             
+            if not self.is_save_output:
+                # get width and height of source video 
+                src_width = frame_meta.source_frame_width
+                src_height = frame_meta.source_frame_height
+                #logger.info(f"source_height: {src_height}")
+                #logger.info(f"source_width: {src_width}")
+
+                height_prp = src_height
+                width_prp = src_width
+            else: 
+                height_prp = self.image_height
+                width_prp = self.image_width 
+
+            
+            #c += 1
+            #print("c: ", c)
+            #c1 = 0
+            #if l_user is None:
+            #    print("Noning...")
+            while l_user is not None:
+                #c1 += 1
+                #print("c1: ", c1)
+                try:
+                    # Note that l_user.data needs a cast to pyds.NvDsUserMeta
+                    # The casting also keeps ownership of the underlying memory
+                    # in the C code, so the Python garbage collector will leave
+                    # it alone.
+                    user_meta = pyds.NvDsUserMeta.cast(l_user.data)
+                except StopIteration:
+                    break
+
+                if (
+                        user_meta.base_meta.meta_type
+                        != pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META
+                ):
+                    #logger.info("user_meta: {}".format(user_meta))
+                    continue
+                
+                # get tensor-meta from triton inference output
+                tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
+                #logger.info("tensor_meta: {}".format(tensor_meta))
+
+                # Boxes in the tensor meta should be in network resolution which is
+                # found in tensor_meta.network_info. Use this info to scale boxes to
+                # the input frame resolution.
+                layers_info = []
+                #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
+                for i in range(tensor_meta.num_output_layers):
+                    layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
+                    #logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
+                    # Convert tensor metadata to numpy array
+                    ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
+                    output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
+                    #logger.info(f"--> np_array.shape: {output_np_array.shape}")
+                    layers_info.append(layer)
+                #logger.info(f"layers_info: {layers_info}")
+                
+                detected_obj = postprocess(
+                    output_np_array, 
+                    width_prp, height_prp,
+                    conf_threshold=self.conf_thresh, 
+                    nms_threshold=self.nms_thresh)
+
+                bboxes = [[int(box.x1), int(box.y1), int(box.x2), int(box.y2)] for box in detected_obj]
+                labels = [self.label(int(box.classID)).name for box in detected_obj]
+                scores = [box.confidence for box in detected_obj]
+
+                ensemble_results = {
+                    "frame_%s"%frame_meta.frame_num:{
+                        "scores":scores, 
+                        "labels":labels, 
+                        "boxes":bboxes}
+                }
+                logger.info(f"--> ensemble_result: {ensemble_results}")
+
+                self.extracted_frame += 1
+
+                try:
+                    l_user = l_user.next
+                except StopIteration:
+                    break
+
+                
+                
             try:
                 l_frame = l_frame.next
             except StopIteration:

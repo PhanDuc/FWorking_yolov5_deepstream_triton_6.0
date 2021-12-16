@@ -17,8 +17,6 @@ infer_config {
         root: "/models"
         log_level: 2
         strict_model_config: true
-        #tf_gpu_memory_fraction: 0.4
-        #tf_disable_soft_placement: 0
       }
     }
   }
@@ -37,7 +35,7 @@ infer_config {
   }
 
   postprocess {
-    labelfile_path: "/opt/nvidia/deepstream/deepstream-6.0/sources/YOLOv5_Deepstream_6.0/deepstream_triton_yolov5/labels.txt"
+    #labelfile_path: "/opt/nvidia/deepstream/deepstream-6.0/sources/YOLOv5_Deepstream_6.0/deepstream_triton_yolov5/labels.txt"
     other {}
   }
 
@@ -51,10 +49,10 @@ infer_config {
 }
 input_control {
   process_mode: PROCESS_MODE_FULL_FRAME
-  interval: 0
+  interval: 10 # skip_frames arguments
 }
 output_control {
   output_tensor_meta: true
 }
-
+#async_mode: false
 
