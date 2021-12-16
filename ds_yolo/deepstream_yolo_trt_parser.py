@@ -131,27 +131,21 @@ def ds_pipeline(
         logger.error("ERROR: {}".format(ex))
     
 
-    if batch_size == 1:
-        pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe, 0)
+    pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe, 0)
 
-        if is_save_output:
-            # Lets add probe to get informed of the meta data generated, we add probe to
-            # the sink pad of the osd element, since by that time, the buffer would have
-            # had got all the metadata.
-            try:
-                osdsinkpad = nvosd.get_static_pad("sink")
-                if not osdsinkpad:
-                    logger.warning(" Unable to get sink pad of nvosd \n")
-            except Exception as ex:
-                logger.error("ERROR: {}".format(ex))
-            
+    if is_save_output:
+        # Lets add probe to get informed of the meta data generated, we add probe to
+        # the sink pad of the osd element, since by that time, the buffer would have
+        # had got all the metadata.
+        try:
+            osdsinkpad = nvosd.get_static_pad("sink")
+            if not osdsinkpad:
+                logger.warning(" Unable to get sink pad of nvosd \n")
+        except Exception as ex:
+            logger.error("ERROR: {}".format(ex))
+        
 
-            osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, pl.osd_sink_pad_buffer_probe, 0)
-    else:
-        pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe_batch_size, 0)
-
-        if is_save_output:
-            logger.warning("Save video output only operate with batch_size == 1")
+        osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, pl.osd_sink_pad_buffer_probe, 0)
 
     done_init_t = time.perf_counter() - init_t
 
