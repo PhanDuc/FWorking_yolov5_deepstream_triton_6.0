@@ -398,12 +398,14 @@ class PipelineParts():
                 width_prp = self.image_width 
 
             
-            c += 1
-            print("c: ", c)
-            c1 = 0
+            #c += 1
+            #print("c: ", c)
+            #c1 = 0
+            #if l_user is None:
+            #    print("Noning...")
             while l_user is not None:
-                c1 += 1
-                print("c1: ", c1)
+                #c1 += 1
+                #print("c1: ", c1)
                 try:
                     # Note that l_user.data needs a cast to pyds.NvDsUserMeta
                     # The casting also keeps ownership of the underlying memory
