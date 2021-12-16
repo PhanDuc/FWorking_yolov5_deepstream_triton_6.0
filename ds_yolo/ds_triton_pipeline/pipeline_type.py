@@ -301,6 +301,7 @@ def uri_local_pipeline(
             sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
 
         logger.info("Playing %s MP4 or URI file %s " % (len(test_video_file), (" ").join(test_video_file)))
+        is_live = False
         
         pipeline.add(streammux)    
         for idx in range(len(test_video_file)):
@@ -391,3 +392,5 @@ def uri_local_pipeline(
         return pipeline, pgie, nvosd
     except Exception as ex:
         logger.error("ERROR: %s" % ex)
+
+

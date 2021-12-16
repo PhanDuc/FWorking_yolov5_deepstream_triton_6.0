@@ -1,4 +1,5 @@
 import argparse
+import os
 import pyds
 import time
 import sys
@@ -20,7 +21,7 @@ from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
 parser.add_argument(
     "--test_video", help="test video file path or uri", type=str, nargs="+",
-    default="/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264")
+    default=["/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264"])
 parser.add_argument("--skip_frames", help="skip x frames e.g. 0, 10, 20, 30", type=int, default=1)
 parser.add_argument("--batch_size", help="batch size inference", type=int, default=1)
 parser.add_argument("--label_type", help="Label type (flag/nsfw)", type=str, default="flag")
@@ -86,7 +87,7 @@ def ds_pipeline(
             # filesrc -> h264parser -> nvh264-decoder -> streammux -> tritoninfer -> postprocess
             pipeline, pgie, nvosd = h264_pipeline(
                 pipeline, pl, 
-                test_video, 
+                test_video[0], 
                 batch_size=batch_size,
                 skip_frames=skip_frames,
                 is_save_output=is_save_output, 
@@ -104,6 +105,8 @@ def ds_pipeline(
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 
                 is_dali=is_dali, is_grpc=is_grpc)
+
+
     except Exception as ex:
         logger.error(ex)
         sys.exit(1)
