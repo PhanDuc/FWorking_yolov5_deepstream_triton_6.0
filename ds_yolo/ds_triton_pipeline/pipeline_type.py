@@ -175,12 +175,12 @@ def cb_newpad(decodebin, decoder_src_pad, data):
 
     # Need to check if the pad created by the decodebin is for video and not
     # audio.
-    logger.info("gstname=", gstname)
+    logger.info("gstname= {}".format(gstname))
     if gstname.find("video") != -1:
         # Link the decodebin pad only if decodebin has picked nvidia
         # decoder plugin nvdec_*. We do this by checking if the pad caps contain
         # NVMM memory features.
-        logger.info("features=", features)
+        logger.info("features= {}".format(features))
         if features.contains("memory:NVMM"):
             # Get the source bin ghost pad
             bin_ghost_pad = source_bin.get_static_pad("src")
@@ -297,11 +297,14 @@ def uri_local_pipeline(
         sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
 
     logger.info("Playing %s MP4 or URI file %s " % (len(test_video_file), ("  ").join(test_video_file)))
+    
+    pipeline.add(streammux)
     for idx in range(len(test_video_file)):
         uri_name = test_video_file[idx]
         source_bin = create_source_bin(uri_name)
         if not source_bin:
             logger.opt(colors=True).warning("Unable to create source bin \n")
+        pipeline.add(source_bin)
         padname = "sink_%s"%idx
         
         # streamux link to decode frame by padname
@@ -342,8 +345,6 @@ def uri_local_pipeline(
             pgie.set_property("config-file-path", grpc_ds_dali_yolo_config)
 
     logger.info("Adding elements to Pipeline \n")
-    pipeline.add(source_bin)
-    pipeline.add(streammux)
     pipeline.add(pgie)
 
     if is_save_output:
