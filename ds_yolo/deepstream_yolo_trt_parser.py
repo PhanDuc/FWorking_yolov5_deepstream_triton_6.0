@@ -15,7 +15,7 @@ from loguru import logger
 from common.bus_call import bus_call
 
 from ds_triton_pipeline.pipeline_parts import PipelineParts
-from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline, image_pipeline
+from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline
 
 
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
