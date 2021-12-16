@@ -108,7 +108,7 @@ def ds_pipeline(
         elif os.path.isdir(test_video[0]):
             pipeline, pgie = image_pipeline(
                 pipeline, pl, 
-                test_video, 
+                test_video[0], 
                 batch_size=batch_size, 
                 image_width=outvid_width, image_height=outvid_height)
 
@@ -123,9 +123,13 @@ def ds_pipeline(
     bus.connect("message", bus_call, loop)
 
     # Add a probe on the primary-infer source pad to get inference output tensors
-    pgiesrcpad = pgie.get_static_pad("src")
+    try:
+        pgiesrcpad = pgie.get_static_pad("src")
+    except Exception as ex:
+        logger.error("ERROR: {}".format(ex))
+    
     if not pgiesrcpad:
-        logger.warning(" Unable to get src pad of primary infer \n")
+            logger.warning(" Unable to get src pad of primary infer \n")
 
     if batch_size == 1:
         pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe, 0)
@@ -134,7 +138,10 @@ def ds_pipeline(
             # Lets add probe to get informed of the meta data generated, we add probe to
             # the sink pad of the osd element, since by that time, the buffer would have
             # had got all the metadata.
-            osdsinkpad = nvosd.get_static_pad("sink")
+            try:
+                osdsinkpad = nvosd.get_static_pad("sink")
+            except Exception as ex:
+                logger.error("ERROR: {}".format(ex))
             if not osdsinkpad:
                 logger.warning(" Unable to get sink pad of nvosd \n")
 
