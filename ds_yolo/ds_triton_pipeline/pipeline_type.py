@@ -305,6 +305,9 @@ def uri_local_pipeline(
         pipeline.add(streammux)    
         for idx in range(len(test_video_file)):
             uri_name = test_video_file[idx]
+            if uri_name.find("rtsp://") == 0:
+                is_live = True
+
             source_bin = create_source_bin(idx, uri_name)
             if not source_bin:
                 logger.opt(colors=True).warning("Unable to create source bin \n")
@@ -321,7 +324,11 @@ def uri_local_pipeline(
             if not srcpad:
                 logger.warning("Unable to create src pad bin \n")
             
-            srcpad.link(sinkpad)    
+            srcpad.link(sinkpad)   
+
+        if is_live:
+            logger.info("At least one of the source is live")
+            streammux.set_property("live-source", 1) 
         
         streammux.set_property("width", image_width)
         streammux.set_property("height", image_height)

@@ -81,7 +81,7 @@ def ds_pipeline(
     if not pipeline:
         sys.stderr.write(" Unable to create Pipeline \n")
     try:
-        if test_video[0].endswith(".h264") and not "https://" in test_video[0] and not "file:///" in test_video[0]:
+        if test_video[0].endswith(".h264") and not test_video[0].startswith("https://") and not test_video[0].startswith("file:///"):
             # Pipeline: 
             # filesrc -> h264parser -> nvh264-decoder -> streammux -> tritoninfer -> postprocess
             pipeline, pgie, nvosd = h264_pipeline(
@@ -93,7 +93,7 @@ def ds_pipeline(
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height,
                 is_dali=is_dali, is_grpc=is_grpc)
-        elif "file://" in test_video[0] or "https://" in test_video[0]:
+        elif test_video[0].startswith("file://") or test_video[0].startswith("https://") or test_video[0].startswith("rtsp://"):
             # uridecoders -> streammux -> triton_infer -> postprocess 
             pipeline, pgie, nvosd = uri_local_pipeline(
                 pipeline, pl, 
