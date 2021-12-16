@@ -19,7 +19,7 @@ from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline
 
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
 parser.add_argument(
-    "--test_video", help="test video file path or uri", type=str, 
+    "--test_video", help="test video file path or uri", type=str, nargs="+",
     default="/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264")
 parser.add_argument("--skip_frames", help="skip x frames e.g. 0, 10, 20, 30", type=int, default=1)
 parser.add_argument("--batch_size", help="batch size inference", type=int, default=1)
@@ -81,7 +81,7 @@ def ds_pipeline(
     if not pipeline:
         sys.stderr.write(" Unable to create Pipeline \n")
     try:
-        if test_video.endswith(".h264") and not "https://" in test_video:
+        if test_video[0].endswith(".h264") and not "https://" in test_video[0]:
             # Pipeline: 
             # filesrc -> h264parser -> nvh264-decoder -> streammux -> tritoninfer -> postprocess
             pipeline, pgie, nvosd = h264_pipeline(
@@ -93,7 +93,7 @@ def ds_pipeline(
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height,
                 is_dali=is_dali, is_grpc=is_grpc)
-        elif "file://" in test_video or "https://" in test_video:
+        elif "file://" in test_video[0] or "https://" in test_video[0]:
             # uridecoders -> streammux -> triton_infer -> postprocess 
             pipeline, pgie, nvosd = uri_local_pipeline(
                 pipeline, pl, 
