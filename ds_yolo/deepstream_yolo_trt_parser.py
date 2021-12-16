@@ -87,7 +87,7 @@ def ds_pipeline(
             # filesrc -> h264parser -> nvh264-decoder -> streammux -> tritoninfer -> postprocess
             pipeline, pgie, nvosd = h264_pipeline(
                 pipeline, pl, 
-                test_video, 
+                test_video[0], 
                 batch_size=batch_size,
                 skip_frames=skip_frames,
                 is_save_output=is_save_output, 
@@ -104,7 +104,9 @@ def ds_pipeline(
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 
-                is_dali=is_dali, is_grpc=is_grpc) 
+                is_dali=is_dali, is_grpc=is_grpc)
+
+
     except Exception as ex:
         logger.error(ex)
         sys.exit(1)
