@@ -25,6 +25,7 @@ from postprocess.labels import NSFWLabels, FlagLabels
 from postprocess.trt_postprocess import postprocess
 
 
+
 class PipelineParts():
     def __init__(
         self,   
@@ -46,6 +47,8 @@ class PipelineParts():
             self.label = FlagLabels
         elif label_type == "nsfw":
             self.label = NSFWLabels
+
+        self.extracted_frame = 0
         
     def make_elm_or_print_err(self, factoryname, name, printedname, detail=""):
         """ Creates an element with Gst Element Factory make.
@@ -316,6 +319,8 @@ class PipelineParts():
                         "boxes":bboxes}
                 }
                 logger.info(f"--> ensemble_result: {ensemble_results}")
+
+                self.extracted_frame += 1
 
                 try:
                     l_user = l_user.next

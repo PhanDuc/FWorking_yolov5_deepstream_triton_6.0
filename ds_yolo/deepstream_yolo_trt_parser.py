@@ -136,7 +136,7 @@ def ds_pipeline(
 
         if is_save_output:
             logger.warning("Save video output only operate with batch_size == 1")
-            
+
     done_init_t = time.perf_counter() - init_t
 
     # start play back and listen to events
@@ -156,6 +156,7 @@ def ds_pipeline(
     logger.info(f"Initialize pipeline time: {done_init_t:.5f}")
     logger.info(f"Inference + Postprocess + save (option): {end:.5f}")
     logger.info(f"elapsed time: {(done_init_t + end):.5f}")
+    logger.info(f"extracted frames: {pl.extracted_frame}")
 
 
 if __name__ == "__main__":
