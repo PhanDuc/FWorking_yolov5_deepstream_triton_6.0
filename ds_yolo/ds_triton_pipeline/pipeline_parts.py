@@ -464,6 +464,8 @@ class PipelineParts():
                 }
                 logger.info(f"--> ensemble_result: {ensemble_results}")
 
+                self.extracted_frame += 1
+
                 try:
                     l_user = l_user.next
                 except StopIteration:
