@@ -111,7 +111,7 @@ def ds_pipeline(
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 
                 is_dali=is_dali, is_grpc=is_grpc)
-        elif os.path.isdir(test_video[0]) or test_video[0].endswith("jpg"):
+        elif os.path.isdir(test_video[0]) or os.path.isfile(test_video[0]) or test_video[0].endswith(".jpg") or test_video[0].endswith(".mjpeg"):
             pipeline, pgie = image_pipeline(
                 pipeline, pl, 
                 test_video[0], 
