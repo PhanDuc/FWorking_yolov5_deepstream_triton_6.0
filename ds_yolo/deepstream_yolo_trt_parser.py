@@ -124,6 +124,7 @@ def ds_pipeline(
             logger.debug(
                 "DEBUG: The system allow a or more source and accepts any format like: mp4, h264, https, rstp... \n", 
                 "Setup `--test_video` file:///path/to/video_1.mp4 file:///path/to/video_2.mp4 ")
+            sys.exit(1)
 
     except Exception as ex:
         logger.error(f"ERROR: {ex}")
@@ -142,6 +143,7 @@ def ds_pipeline(
                 logger.warning("WARNING: Unable to get src pad of primary infer \n")
     except Exception as ex:
         logger.error("ERROR: {}".format(ex))
+        sys.exit(1)
     
 
     pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe, 0)
@@ -154,10 +156,10 @@ def ds_pipeline(
             osdsinkpad = nvosd.get_static_pad("sink")
             if not osdsinkpad:
                 logger.warning("WARNING: Unable to get sink pad of nvosd \n")
-        except Exception as ex:
-            logger.error("ERROR: {}".format(ex))
         
-        osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, pl.osd_sink_pad_buffer_probe, 0)    
+            osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, pl.osd_sink_pad_buffer_probe, 0)    
+        except Exception as ex:
+            logger.error("ERROR: {}".format(ex))    
     
     done_init_t = time.perf_counter() - init_t
 
