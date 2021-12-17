@@ -2,7 +2,12 @@
 
 **Deepstream + Triton Inference Server + Yolov5 is awesome!!!**
 
-Content table:
+## Features:
+- Run any format input that is supported by Gstreamer.
+- Process a or more video input.
+- Process local file or HTTP video or Real-Time Streaming video (RTSP)
+
+## Content table:
 1. [Setup DeepStream Triton docker](#setup-deepstream-triton-docker)
 2. [Build DeepStream Python API](#build-deepstream-python-api) 
 3. [Triton model structure](#triton-model-structure)
