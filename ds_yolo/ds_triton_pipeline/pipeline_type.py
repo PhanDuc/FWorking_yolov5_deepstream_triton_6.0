@@ -435,7 +435,22 @@ def image_pipeline(
     streammux.set_property('height', image_height)
     streammux.set_property('batch-size', batch_size)
     streammux.set_property('batched-push-timeout', 4000000)
-    pgie.set_property('config-file-path', ds_yolo_config)
+    if not is_dali:
+        if not is_grpc:
+            logger.info("DeepStream Triton yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", ds_yolo_config)
+        else:
+            logger.info("DeepStream GRPC Triton yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", grpc_ds_yolo_config)
+    else:
+        if not is_grpc:
+            logger.info("DeepStream Triton DALI yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", ds_dali_yolo_config)
+        else:
+
+            logger.info("DeepStream GRPC Triton DALI yolov5 tensorRT inference")
+            pgie.set_property("config-file-path", grpc_ds_dali_yolo_config)
+    
     pgie_batch_size = pgie.get_property("batch-size")
     if pgie_batch_size != 1:
         print("WARNING: Overriding infer-config batch-size", pgie_batch_size,

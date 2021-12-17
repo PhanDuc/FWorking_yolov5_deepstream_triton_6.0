@@ -62,6 +62,12 @@ def ds_pipeline(
     output_video_name="./ds_triton_yolov5_trt_out.mp4", 
     label_type="flag"):
     init_t = time.perf_counter()
+    # can't save video output if batch size larger than 1
+    if batch_size != 1:
+        if is_save_output:
+            logger.warning("Save video output only operate with batch_size == 1")
+            is_save_output = False
+
     # Initialize Pipleline parts
     pl = PipelineParts(
         #skip_frames=skip_frames,
@@ -150,8 +156,7 @@ def ds_pipeline(
     else:
         pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe_batch_size, 0)
 
-        if is_save_output:
-            logger.warning("Save video output only operate with batch_size == 1")
+        
 
     done_init_t = time.perf_counter() - init_t
 
