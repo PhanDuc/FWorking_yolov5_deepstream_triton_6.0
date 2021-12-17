@@ -125,7 +125,11 @@ Deepstream Triton Yolov5 PIPELINE
 optional arguments:
   -h, --help            show this help message and exit
   --test_video TEST_VIDEO [TEST_VIDEO ...]
-                        test video file path or uri
+                        test video file path or uri. The system
+                        allow a or more source and accepts any format like:
+                        mp4, h264, https, rstp... Setup `--test_video`
+                        file:///path/to/video_1.mp4
+                        file:///path/to/video_2.mp4
   --batch_size BATCH_SIZE
                         batch size inference
   --label_type LABEL_TYPE
@@ -185,6 +189,8 @@ Option, Specifies the number of consecutive, batches to be skipped for inference
 
 Change skip-frames at [interval parameter](./config_ds_triton_infer/ds_yolov5_trt_nopostprocess.txt#L55). 
 
-E.g. skip-frames = 10 -> interval: 9
+Set `interval : (number of skip frames) - 1`
+
+E.g. want to use skip-frames = 10, set `interval: 9`
 
 ## [Reference](./reference.md)

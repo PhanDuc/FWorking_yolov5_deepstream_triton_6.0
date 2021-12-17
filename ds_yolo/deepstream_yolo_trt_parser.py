@@ -20,7 +20,12 @@ from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline, 
 
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
 parser.add_argument(
-    "--test_video", help="test video file path or uri", type=str, nargs="+",
+    "--test_video", 
+    help="""
+    test video file path or uri or jpg image. 
+    The system allow a or more source and accepts any format like: mp4, h264, https, rstp... 
+    Setup `--test_video` file:///path/to/video_1.mp4 file:///path/to/video_2.mp4""", 
+    type=str, nargs="+",
     default=["/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264"])
 parser.add_argument("--batch_size", help="batch size inference", type=int, default=1)
 parser.add_argument("--label_type", help="Label type (flag/nsfw)", type=str, default="flag")
@@ -116,8 +121,9 @@ def ds_pipeline(
                 image_width=outvid_width, image_height=outvid_height)
         else:
             logger.error("ERROR: Not found source. ")
-            logger.debug("""DEBUG: The system allow a or more source and accepts any format like: mp4, h264, https, rstp... \n
-                            Setup `--test_video` file:///path/to/video_1.mp4 file:///path/to/video_2.mp4 """)
+            logger.debug(
+                "DEBUG: The system allow a or more source and accepts any format like: mp4, h264, https, rstp... \n", 
+                "Setup `--test_video` file:///path/to/video_1.mp4 file:///path/to/video_2.mp4 ")
 
     except Exception as ex:
         logger.error(f"ERROR: {ex}")
