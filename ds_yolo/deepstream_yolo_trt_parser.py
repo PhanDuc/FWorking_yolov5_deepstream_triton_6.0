@@ -22,7 +22,6 @@ parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE"
 parser.add_argument(
     "--test_video", help="test video file path or uri", type=str, nargs="+",
     default=["/opt/nvidia/deepstream/deepstream-6.0/samples/streams/sample_qHD.h264"])
-parser.add_argument("--skip_frames", help="skip x frames e.g. 0, 10, 20, 30", type=int, default=1)
 parser.add_argument("--batch_size", help="batch size inference", type=int, default=1)
 parser.add_argument("--label_type", help="Label type (flag/nsfw)", type=str, default="flag")
 parser.add_argument("--is_save", help="Save result video output", action="store_true")
@@ -47,12 +46,10 @@ IS_GRPC = args.is_grpc
 test_video = args.test_video
 label_type = args.label_type
 BATCH_SIZE = args.batch_size
-SKIP_FRAMES = args.skip_frames
 
 
 def ds_pipeline(
     test_video, 
-    skip_frames=1,
     batch_size=1,
     conf_threshold=0.5, iou_threshold=0.45, 
     is_save_output=False, 
@@ -69,12 +66,14 @@ def ds_pipeline(
             is_save_output = False
 
     # Initialize Pipleline parts
-    pl = PipelineParts(
-        #skip_frames=skip_frames,
-        is_save_output=is_save_output, 
-        image_width=outvid_width, image_height=outvid_height, 
-        conf_threshold=conf_threshold, nms_threshold=iou_threshold, 
-        label_type=label_type)
+    try:
+        pl = PipelineParts(
+            is_save_output=is_save_output, 
+            image_width=outvid_width, image_height=outvid_height, 
+            conf_threshold=conf_threshold, nms_threshold=iou_threshold, 
+            label_type=label_type)
+    except Exception as ex:
+        logger.error(f"ERROR: {ex}")
 
     # Standard GStreamer initialization
     GObject.threads_init()
@@ -86,7 +85,7 @@ def ds_pipeline(
     pipeline = Gst.Pipeline()
 
     if not pipeline:
-        sys.stderr.write(" Unable to create Pipeline \n")
+        logger.warning("WARNING: Unable to create Pipeline \n")
     try:
         if test_video[0].endswith(".h264") and not test_video[0].startswith("https://") and not test_video[0].startswith("file:///"):
             # Pipeline: 
@@ -95,7 +94,6 @@ def ds_pipeline(
                 pipeline, pl, 
                 test_video[0], 
                 batch_size=batch_size,
-                skip_frames=skip_frames,
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height,
@@ -106,7 +104,6 @@ def ds_pipeline(
                 pipeline, pl, 
                 test_video, 
                 batch_size=batch_size,
-                skip_frames=skip_frames,
                 is_save_output=is_save_output, 
                 output_video_name=output_video_name, 
                 image_width=outvid_width, image_height=outvid_height, 
@@ -119,7 +116,7 @@ def ds_pipeline(
                 image_width=outvid_width, image_height=outvid_height)
 
     except Exception as ex:
-        logger.error(ex)
+        logger.error(f"ERROR: {ex}")
         sys.exit(1)
 
     # create an event loop and feed gstreamer bus mesages to it
@@ -132,32 +129,26 @@ def ds_pipeline(
     try:
         pgiesrcpad = pgie.get_static_pad("src")
         if not pgiesrcpad:
-                logger.warning(" Unable to get src pad of primary infer \n")
+                logger.warning("WARNING: Unable to get src pad of primary infer \n")
     except Exception as ex:
         logger.error("ERROR: {}".format(ex))
     
 
-    if batch_size == 1:
-        pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe, 0)
+    pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe, 0)
 
-        if is_save_output:
-            # Lets add probe to get informed of the meta data generated, we add probe to
-            # the sink pad of the osd element, since by that time, the buffer would have
-            # had got all the metadata.
-            try:
-                osdsinkpad = nvosd.get_static_pad("sink")
-                if not osdsinkpad:
-                    logger.warning(" Unable to get sink pad of nvosd \n")
-            except Exception as ex:
-                logger.error("ERROR: {}".format(ex))
-            
-
-            osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, pl.osd_sink_pad_buffer_probe, 0)
-    else:
-        pgiesrcpad.add_probe(Gst.PadProbeType.BUFFER, pl.pgie_src_pad_buffer_probe_batch_size, 0)
-
+    if is_save_output:
+        # Lets add probe to get informed of the meta data generated, we add probe to
+        # the sink pad of the osd element, since by that time, the buffer would have
+        # had got all the metadata.
+        try:
+            osdsinkpad = nvosd.get_static_pad("sink")
+            if not osdsinkpad:
+                logger.warning("WARNING: Unable to get sink pad of nvosd \n")
+        except Exception as ex:
+            logger.error("ERROR: {}".format(ex))
         
-
+        osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, pl.osd_sink_pad_buffer_probe, 0)    
+    
     done_init_t = time.perf_counter() - init_t
 
     # start play back and listen to events
@@ -167,7 +158,8 @@ def ds_pipeline(
     start_t = time.perf_counter()
     try:
         loop.run()
-    except:
+    except Exception as ex:
+        logger.warning(f"WARNING: {ex}")
         pass
     # cleanup
     pipeline.set_state(Gst.State.NULL)
@@ -184,7 +176,6 @@ if __name__ == "__main__":
     sys.exit(
         ds_pipeline(
             test_video=test_video, 
-            skip_frames=SKIP_FRAMES,
             batch_size=BATCH_SIZE,
             conf_threshold=CONF_THRESHOLD,
             iou_threshold=IOU_THRESHOLD,

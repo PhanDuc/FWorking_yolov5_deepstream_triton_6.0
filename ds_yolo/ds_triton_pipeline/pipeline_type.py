@@ -22,8 +22,7 @@ grpc_ds_yolo_config = os.path.join(config_path, "grpc_ds_yolov5_trt_nopostproces
 def h264_pipeline(
     pipeline, pl, 
     test_video_file,
-    batch_size=1,  
-    skip_frames=1,
+    batch_size=1,
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, 
@@ -139,10 +138,10 @@ def h264_pipeline(
         # streammux link to decoded frame sink_0
         sinkpad = streammux.get_request_pad("sink_0")
         if not sinkpad:
-            logger.opt(colors=True).warning(" Unable to get the sink pad of streammux \n")
+            logger.opt(colors=True).warning("WARNING: Unable to get the sink pad of streammux \n")
         srcpad = decoder.get_static_pad("src")
         if not srcpad:
-            logger.opt(colors=True).warning(" Unable to get source pad of decoder \n")
+            logger.opt(colors=True).warning("WARNING: Unable to get source pad of decoder \n")
         srcpad.link(sinkpad)
         streammux.link(pgie)
 
@@ -187,9 +186,9 @@ def cb_newpad(decodebin, decoder_src_pad, data):
             # Get the source bin ghost pad
             bin_ghost_pad = source_bin.get_static_pad("src")
             if not bin_ghost_pad.set_target(decoder_src_pad):
-                logger.opt(colors=True).warning("Failed to link decoder src pad to source bin ghost pad\n")
+                logger.opt(colors=True).warning("WARNING: Failed to link decoder src pad to source bin ghost pad\n")
         else:
-            logger.opt(colors=True).warning(" Error: Decodebin did not pick nvidia decoder plugin.\n")
+            logger.error("ERROR: Decodebin did not pick nvidia decoder plugin.\n")
 
 
 def decodebin_child_added(child_proxy, Object, name, user_data):
@@ -210,14 +209,14 @@ def create_source_bin(idx, uri):
     #logger.info(f"source_name: {bin_name}")
     nbin = Gst.Bin.new(bin_name)
     if not nbin:
-        logger.opt(colors=True).warning(" Unable to create source bin \n")
+        logger.opt(colors=True).warning("WARNING: Unable to create source bin \n")
 
     # Source element for reading from the uri.
     # We will use decodebin and let it figure out the container format of the
     # stream and the codec and plug the appropriate demux and decode plugins.
     uri_decode_bin = Gst.ElementFactory.make("uridecodebin", "uri-decode-bin")
     if not uri_decode_bin:
-        logger.opt(colors=True).warning(" Unable to create uri decode bin \n")
+        logger.opt(colors=True).warning("WARNING: Unable to create uri decode bin \n")
     # We set the input uri to the source element
     uri_decode_bin.set_property("uri", uri)
     # Connect to the "pad-added" signal of the decodebin which generates a
@@ -233,7 +232,7 @@ def create_source_bin(idx, uri):
     Gst.Bin.add(nbin, uri_decode_bin)
     bin_pad = nbin.add_pad(Gst.GhostPad.new_no_target("src", Gst.PadDirection.SRC))
     if not bin_pad:
-        logger.opt(colors=True).warning(" Failed to add ghost pad in source bin \n")
+        logger.opt(colors=True).warning("WARNING: Failed to add ghost pad in source bin \n")
         return None
     return nbin
 
@@ -241,7 +240,6 @@ def uri_local_pipeline(
     pipeline, pl, 
     test_video_file, 
     batch_size=1, 
-    skip_frames=1, 
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, 
@@ -400,24 +398,23 @@ def uri_local_pipeline(
 def image_pipeline(    
     pipeline, pl, 
     test_video_file,
-    batch_size=1,  
-    skip_frames=1,
+    batch_size=1, 
     is_save_output=True, 
     output_video_name="./out.mp4", 
     image_width=1920, image_height=1080, 
     is_dali=False, is_grpc=False):
     try:
         # Source element for reading from the file
-        print("Creating Source \n ")
+        logger.info("Creating Source \n ")
         source = pl.make_elm_or_print_err("filesrc", "file-source", "Source")
         
         # Since the data format in the input file is jpeg,
         # we need a jpegparser
-        print("Creating jpegParser \n")
+        logger.info("Creating jpegParser \n")
         jpegparser = pl.make_elm_or_print_err("jpegparse", "jpeg-parser", "JPEGParser")
         
         # Use nvdec for hardware accelerated decode on GPU
-        print("Creating Decoder \n")
+        logger.info("Creating Decoder \n")
         #decoder = pl.make_elm_or_print_err("nvv4l2decoder", "nvv4l2-decoder", "Decoder")
         decoder = pl.make_elm_or_print_err("nvjpegdec", "nvjpeg-decoder", "Decoder")
         
@@ -430,7 +427,7 @@ def image_pipeline(
         sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
 
         
-        print("Playing file %s " % test_video_file)
+        logger.info("Playing file %s " % test_video_file)
         source.set_property('location', test_video_file)
 
         streammux.set_property('width', image_width)
@@ -455,13 +452,11 @@ def image_pipeline(
         
         pgie_batch_size = pgie.get_property("batch-size")
         if pgie_batch_size != 1:
-            print("WARNING: Overriding infer-config batch-size", pgie_batch_size,
-                " with number of sources ", 1,
-                " \n")
+            logger.warning(f"WARNING: Overriding infer-config batch-size {pgie_batch_size} with number of sources 1 \n")
             pgie.set_property("batch-size", 1)
         
-        sink.set_property("qos", 0)
-        print("Adding elements to Pipeline \n")
+        #sink.set_property("qos", 0)
+        logger.info("Adding elements to Pipeline \n")
         pipeline.add(source)
         pipeline.add(jpegparser)
         pipeline.add(decoder)
@@ -472,7 +467,7 @@ def image_pipeline(
         # we link the elements together
         # file-source -> jpeg-parser -> nvv4l2-decoder ->
         # nvinfer -> nvsegvisual -> sink
-        print("Linking elements in the Pipeline \n")
+        logger.info("Linking elements in the Pipeline \n")
         source.link(jpegparser)
         jpegparser.link(decoder)
 
