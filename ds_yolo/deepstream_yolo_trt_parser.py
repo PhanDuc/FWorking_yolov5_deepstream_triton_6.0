@@ -60,9 +60,9 @@ def ds_pipeline(
     label_type="flag"):
     init_t = time.perf_counter()
     # can't save video output if batch size larger than 1
-    if batch_size != 1:
+    if batch_size != 1 or len(test_video) != 1:
         if is_save_output:
-            logger.warning("Save video output only operate with batch_size == 1")
+            logger.warning("Save video output only operate with 1 video input and batch_size == 1")
             is_save_output = False
 
     # Initialize Pipleline parts
@@ -114,6 +114,10 @@ def ds_pipeline(
                 test_video[0], 
                 batch_size=batch_size, 
                 image_width=outvid_width, image_height=outvid_height)
+        else:
+            logger.error("ERROR: Not found source. ")
+            logger.debug("""DEBUG: The system allow a or more source and accepts any format like: mp4, h264, https, rstp... \n
+                            Setup `--test_video` file:///path/to/video_1.mp4 file:///path/to/video_2.mp4 """)
 
     except Exception as ex:
         logger.error(f"ERROR: {ex}")

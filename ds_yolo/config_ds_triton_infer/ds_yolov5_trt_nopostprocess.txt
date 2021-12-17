@@ -33,7 +33,8 @@ infer_config {
       channel_offsets: [0, 0, 0]
     }
   }
-
+  
+  # Postprocess at client
   postprocess {
     #labelfile_path: "/opt/nvidia/deepstream/deepstream-6.0/sources/YOLOv5_Deepstream_6.0/deepstream_triton_yolov5/labels.txt"
     other {}
@@ -43,14 +44,18 @@ infer_config {
     copy_input_to_host_buffers: false
   }
 
+  # custom library for yolov5 tensorrt
   custom_lib {
     path: "/plugins/libmyplugins.so"
   }
 }
+
 input_control {
   process_mode: PROCESS_MODE_FULL_FRAME
-  interval: 10 # skip_frames arguments
+  interval: 0 # skip_frames arguments
 }
+
+# Allow triton inference output is metadata
 output_control {
   output_tensor_meta: true
 }
