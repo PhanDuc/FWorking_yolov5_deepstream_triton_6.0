@@ -120,9 +120,9 @@ def ds_pipeline(
                 batch_size=batch_size, 
                 image_width=outvid_width, image_height=outvid_height)
         else:
-            logger.error("ERROR: Not found source. ")
+            logger.error("ERROR: Not found source: {}".format((",").join(test_video)))
             logger.debug(
-                "DEBUG: The system allow a or more source and accepts any format like: mp4, h264, https, rstp... \nSetup `--test_video` file:///path/to/video_1.mp4 file:///path/to/video_2.mp4 ")
+                "DEBUG: The system allow a or more source and accepts any format like: mp4, h264, https, rstp... \nSetup --test_video file:///path/to/video_1.mp4 file:///path/to/video_2.mp4 ")
             sys.exit(1)
 
     except Exception as ex:
