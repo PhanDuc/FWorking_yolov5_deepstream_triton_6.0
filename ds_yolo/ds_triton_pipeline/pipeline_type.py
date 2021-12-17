@@ -18,153 +18,9 @@ grpc_ds_dali_yolo_config = os.path.join(config_path, "grpc_ds_dali_yolov5_trt_no
 grpc_ds_yolo_config = os.path.join(config_path, "grpc_ds_yolov5_trt_nopostprocess.txt")
 
 
-# PIPELINE FOR H264 DEEPSTREAM TRITON INFERENCE
-def h264_pipeline(
-    pipeline, pl, 
-    test_video_file,
-    batch_size=1,
-    is_save_output=True, 
-    output_video_name="./out.mp4", 
-    image_width=1920, image_height=1080, 
-    is_dali=False, is_grpc=False):
-    """
-    Build pipeline for inference h264 stream video input
-    """
-    try:
-        # Source element for reading from the file
-        source = pl.make_elm_or_print_err("filesrc", "file-source", "Source")
-
-        # Since the data format in the input file is elementary h264 stream,
-        # we need a h264parser
-        h264parser = pl.make_elm_or_print_err("h264parse", "h264-parser", "H264Parser")
-        parser = h264parser
-
-        # Use nvdec_h264 for hardware accelerated decode on GPU
-        decoder = pl.make_elm_or_print_err("nvv4l2decoder", "nvv4l2-decoder", "Decoder")
-
-        # Create nvstreammux instance to form batches from one or more sources.
-        streammux = pl.make_elm_or_print_err("nvstreammux", "Stream-muxer", "NvStreamMux")
-
-        # Use nvinferserver to run inferencing on decoder's output,
-        # behaviour of inferencing is set through config file
-        pgie = pl.make_elm_or_print_err("nvinferserver", "primary-inference", "Nvinferserver")
-
-        # Use convertor to convert from NV12 to RGBA as required by nvosd
-        nvvidconv = pl.make_elm_or_print_err("nvvideoconvert", "convertor", "Nvvidconv")
-
-        # Create OSD to draw on the converted RGBA buffer
-        nvosd = pl.make_elm_or_print_err("nvdsosd", "onscreendisplay", "OSD (nvosd)")
-
-        # Finally encode and save the osd output
-        queue = pl.make_elm_or_print_err("queue", "queue", "Queue")
-
-        nvvidconv2 = pl.make_elm_or_print_err("nvvideoconvert", "convertor2", "Converter 2 (nvvidconv2)")
-
-        capsfilter = pl.make_elm_or_print_err("capsfilter", "capsfilter", "capsfilter")
-
-        caps = Gst.Caps.from_string("video/x-raw, format=I420")
-        capsfilter.set_property("caps", caps)
-
-        # On Jetson, there is a problem with the encoder failing to initialize
-        # due to limitation on TLS usage. To work around this, preload libgomp.
-        # Add a reminder here in case the user forgets.
-        preload_reminder = "If the following error is encountered:\n" + \
-                        "/usr/lib/aarch64-linux-gnu/libgomp.so.1: cannot allocate memory in static TLS block\n" + \
-                        "Preload the offending library:\n" + \
-                        "export LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libgomp.so.1\n"
-        encoder = pl.make_elm_or_print_err("avenc_mpeg4", "encoder", "Encoder", preload_reminder)
-
-        encoder.set_property("bitrate", 2000000)
-
-        codeparser = pl.make_elm_or_print_err("mpeg4videoparse", "mpeg4-parser", 'Code Parser')
-
-        container = pl.make_elm_or_print_err("qtmux", "qtmux", "Container")
-
-        if is_save_output:
-            sink = pl.make_elm_or_print_err("filesink", "filesink", "Sink")
-
-            sink.set_property("location", output_video_name)
-            sink.set_property("sync", 0)
-            sink.set_property("async", 0)
-        else:
-            sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
-
-        logger.info("Playing file %s " % test_video_file)
-        source.set_property("location", test_video_file)
-        streammux.set_property("width", image_width)
-        streammux.set_property("height", image_height)
-        streammux.set_property("batch-size", batch_size)
-        streammux.set_property("batched-push-timeout", 4000000)
-        if not is_dali:
-            if not is_grpc:
-                logger.info("DeepStream Triton yolov5 tensorRT inference")
-                pgie.set_property("config-file-path", ds_yolo_config)
-            else:
-                logger.info("DeepStream GRPC Triton yolov5 tensorRT inference")
-                pgie.set_property("config-file-path", grpc_ds_yolo_config)
-        else:
-            if not is_grpc:
-                logger.info("DeepStream Triton DALI yolov5 tensorRT inference")
-                pgie.set_property("config-file-path", ds_dali_yolo_config)
-            else:
-
-                logger.info("DeepStream GRPC Triton DALI yolov5 tensorRT inference")
-                pgie.set_property("config-file-path", grpc_ds_dali_yolo_config)
-
-        logger.info("Adding elements to Pipeline \n")
-        pipeline.add(source)
-        pipeline.add(parser)
-        pipeline.add(decoder)
-        pipeline.add(streammux)
-        pipeline.add(pgie)
-        if is_save_output:
-            pipeline.add(nvvidconv)
-            pipeline.add(nvosd)
-            pipeline.add(queue)
-            pipeline.add(nvvidconv2)
-            pipeline.add(capsfilter)
-            pipeline.add(encoder)
-            pipeline.add(codeparser)
-            pipeline.add(container)
-        pipeline.add(sink)
-
-        # we link the elements together
-        # file-source -> h264-parser -> nvh264-decoder ->
-        # nvinfer -> nvvidconv -> nvosd -> video-renderer
-        logger.info("Linking elements in the Pipeline \n")
-        source.link(parser)
-        parser.link(decoder)
-
-        # streammux link to decoded frame sink_0
-        sinkpad = streammux.get_request_pad("sink_0")
-        if not sinkpad:
-            logger.opt(colors=True).warning("WARNING: Unable to get the sink pad of streammux \n")
-        srcpad = decoder.get_static_pad("src")
-        if not srcpad:
-            logger.opt(colors=True).warning("WARNING: Unable to get source pad of decoder \n")
-        srcpad.link(sinkpad)
-        streammux.link(pgie)
-
-        if is_save_output:
-            pgie.link(nvvidconv)
-            nvvidconv.link(nvosd)
-            nvosd.link(queue)
-            queue.link(nvvidconv2)
-            nvvidconv2.link(capsfilter)
-            capsfilter.link(encoder)
-            encoder.link(codeparser)
-            codeparser.link(container)
-            container.link(sink)
-        else:
-            pgie.link(sink)
-        
-        return pipeline, pgie, nvosd
-    except Exception as ex:
-        logger.error("ERROR: %s" % ex)
-
 
 #----------------------------------------------------------------------------------
-# PIPELINE FOR URI OR LOCAL VIDEO FILE
+# PIPELINE FOR URI OR LOCAL VIDEO FILE OR ANY FORMAT. ACCEPT A OR MULTI INPUT
 
 def cb_newpad(decodebin, decoder_src_pad, data):
     logger.info("In cb_newpad\n")
@@ -251,25 +107,25 @@ def uri_local_pipeline(
     try:
         # Source element for reading from the uri or local file
         # Create nvstreammux instance to form batches from one or more sources.
-        streammux = pl.make_elm_or_print_err("nvstreammux", "Stream-muxer", "NvStreamMux")
+        streammux = pl.make_element_pl("nvstreammux", "Stream-muxer", "NvStreamMux")
 
         # Use nvinferserver to run inferencing on decoder's output,
         # behaviour of inferencing is set through config file
-        pgie = pl.make_elm_or_print_err("nvinferserver", "primary-inference", "Nvinferserver")
+        pgie = pl.make_element_pl("nvinferserver", "primary-inference", "Nvinferserver")
 
         # Use convertor to convert from NV12 to RGBA as required by nvosd
-        nvvidconv = pl.make_elm_or_print_err("nvvideoconvert", "convertor", "Nvvidconv")
+        nvvidconv = pl.make_element_pl("nvvideoconvert", "convertor", "Nvvidconv")
 
         # Create OSD to draw on the converted RGBA buffer
-        nvosd = pl.make_elm_or_print_err("nvdsosd", "onscreendisplay", "OSD (nvosd)")
+        nvosd = pl.make_element_pl("nvdsosd", "onscreendisplay", "OSD (nvosd)")
 
 
         # Finally encode and save the osd output
-        queue = pl.make_elm_or_print_err("queue", "queue", "Queue")
+        queue = pl.make_element_pl("queue", "queue", "Queue")
 
-        nvvidconv2 = pl.make_elm_or_print_err("nvvideoconvert", "convertor2", "Converter 2 (nvvidconv2)")
+        nvvidconv2 = pl.make_element_pl("nvvideoconvert", "convertor2", "Converter 2 (nvvidconv2)")
 
-        capsfilter = pl.make_elm_or_print_err("capsfilter", "capsfilter", "capsfilter")
+        capsfilter = pl.make_element_pl("capsfilter", "capsfilter", "capsfilter")
 
         caps = Gst.Caps.from_string("video/x-raw, format=I420")
         capsfilter.set_property("caps", caps)
@@ -281,22 +137,22 @@ def uri_local_pipeline(
                         "/usr/lib/aarch64-linux-gnu/libgomp.so.1: cannot allocate memory in static TLS block\n" + \
                         "Preload the offending library:\n" + \
                         "export LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libgomp.so.1\n"
-        encoder = pl.make_elm_or_print_err("avenc_mpeg4", "encoder", "Encoder", preload_reminder)
+        encoder = pl.make_element_pl("avenc_mpeg4", "encoder", "Encoder", preload_reminder)
 
         encoder.set_property("bitrate", 2000000)
 
-        codeparser = pl.make_elm_or_print_err("mpeg4videoparse", "mpeg4-parser", 'Code Parser')
+        codeparser = pl.make_element_pl("mpeg4videoparse", "mpeg4-parser", 'Code Parser')
 
-        container = pl.make_elm_or_print_err("qtmux", "qtmux", "Container")
+        container = pl.make_element_pl("qtmux", "qtmux", "Container")
 
         if is_save_output:
-            sink = pl.make_elm_or_print_err("filesink", "filesink", "Sink")
+            sink = pl.make_element_pl("filesink", "filesink", "Sink")
 
             sink.set_property("location", output_video_name)
             sink.set_property("sync", 0)
             sink.set_property("async", 0)
         else:
-            sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
+            sink = pl.make_element_pl("fakesink", "fake-sink", "FakeSink")
 
         logger.info("Playing %s MP4 or URI file %s " % (len(test_video_file), (" ").join(test_video_file)))
         is_live = False
@@ -390,97 +246,3 @@ def uri_local_pipeline(
         return pipeline, pgie, nvosd
     except Exception as ex:
         logger.error("ERROR: %s" % ex)
-
-
-
-# --------------------------------------------------------------------------------------------------------
-# PIPELINE FOR JPEG IMAGE DEEPSTREAM TRITON INFERENCE
-def image_pipeline(    
-    pipeline, pl, 
-    test_video_file,
-    batch_size=1, 
-    is_save_output=True, 
-    output_video_name="./out.mp4", 
-    image_width=1920, image_height=1080, 
-    is_dali=False, is_grpc=False):
-    try:
-        # Source element for reading from the file
-        logger.info("Creating Source \n ")
-        source = pl.make_elm_or_print_err("filesrc", "file-source", "Source")
-        
-        # Since the data format in the input file is jpeg,
-        # we need a jpegparser
-        logger.info("Creating jpegParser \n")
-        jpegparser = pl.make_elm_or_print_err("jpegparse", "jpeg-parser", "JPEGParser")
-        
-        # Use nvdec for hardware accelerated decode on GPU
-        logger.info("Creating Decoder \n")
-        #decoder = pl.make_elm_or_print_err("nvv4l2decoder", "nvv4l2-decoder", "Decoder")
-        decoder = pl.make_elm_or_print_err("nvjpegdec", "nvjpeg-decoder", "Decoder")
-        
-        # Create nvstreammux instance to form batches from one or more sources.
-        streammux = pl.make_elm_or_print_err("nvstreammux", "Stream-muxer", "NvStreamMux")
-        
-        # Create segmentation for primary inference
-        pgie = pl.make_elm_or_print_err("nvinferserver", "primary-inference", "Nvinferserver")
-
-        sink = pl.make_elm_or_print_err("fakesink", "fake-sink", "FakeSink")
-
-        
-        logger.info("Playing file %s " % test_video_file)
-        source.set_property('location', test_video_file)
-
-        streammux.set_property('width', image_width)
-        streammux.set_property('height', image_height)
-        streammux.set_property('batch-size', batch_size)
-        streammux.set_property('batched-push-timeout', 4000000)
-        if not is_dali:
-            if not is_grpc:
-                logger.info("DeepStream Triton yolov5 tensorRT inference")
-                pgie.set_property("config-file-path", ds_yolo_config)
-            else:
-                logger.info("DeepStream GRPC Triton yolov5 tensorRT inference")
-                pgie.set_property("config-file-path", grpc_ds_yolo_config)
-        else:
-            if not is_grpc:
-                logger.info("DeepStream Triton DALI yolov5 tensorRT inference")
-                pgie.set_property("config-file-path", ds_dali_yolo_config)
-            else:
-
-                logger.info("DeepStream GRPC Triton DALI yolov5 tensorRT inference")
-                pgie.set_property("config-file-path", grpc_ds_dali_yolo_config)
-        
-        pgie_batch_size = pgie.get_property("batch-size")
-        if pgie_batch_size != 1:
-            logger.warning(f"WARNING: Overriding infer-config batch-size {pgie_batch_size} with number of sources 1 \n")
-            pgie.set_property("batch-size", 1)
-        
-        #sink.set_property("qos", 0)
-        logger.info("Adding elements to Pipeline \n")
-        pipeline.add(source)
-        pipeline.add(jpegparser)
-        pipeline.add(decoder)
-        pipeline.add(streammux)
-        pipeline.add(pgie)
-        pipeline.add(sink)
-
-        # we link the elements together
-        # file-source -> jpeg-parser -> nvv4l2-decoder ->
-        # nvinfer -> nvsegvisual -> sink
-        logger.info("Linking elements in the Pipeline \n")
-        source.link(jpegparser)
-        jpegparser.link(decoder)
-
-        sinkpad = streammux.get_request_pad("sink_0")
-        if not sinkpad:
-            logger.warning(" Unable to get the sink pad of streammux \n")
-        srcpad = decoder.get_static_pad("src")
-        if not srcpad:
-            logger.warning(" Unable to get source pad of decoder \n")
-        srcpad.link(sinkpad)
-        streammux.link(pgie)
-        pgie.link(sink)
-        
-        return pipeline, pgie
-    except Exception as ex:
-        logger.error("ERROR: {}".format(ex))    

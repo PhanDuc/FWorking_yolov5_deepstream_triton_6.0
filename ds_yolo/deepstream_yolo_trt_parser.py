@@ -15,7 +15,7 @@ from loguru import logger
 from common.bus_call import bus_call
 
 from ds_triton_pipeline.pipeline_parts import PipelineParts
-from ds_triton_pipeline.pipeline_type import h264_pipeline, uri_local_pipeline, image_pipeline
+from ds_triton_pipeline.pipeline_type import uri_local_pipeline
 
 
 parser = argparse.ArgumentParser(description="Deepstream Triton Yolov5 PIPELINE")
@@ -92,41 +92,20 @@ def ds_pipeline(
     if not pipeline:
         logger.warning("WARNING: Unable to create Pipeline \n")
     try:
-        if test_video[0].endswith(".h264") and not test_video[0].startswith("https://") and not test_video[0].startswith("file:///"):
-            # Pipeline: 
-            # filesrc -> h264parser -> nvh264-decoder -> streammux -> tritoninfer -> postprocess
-            pipeline, pgie, nvosd = h264_pipeline(
-                pipeline, pl, 
-                test_video[0], 
-                batch_size=batch_size,
-                is_save_output=is_save_output, 
-                output_video_name=output_video_name, 
-                image_width=outvid_width, image_height=outvid_height,
-                is_dali=is_dali, is_grpc=is_grpc)
-        elif test_video[0].startswith("file://") or test_video[0].startswith("https://") or test_video[0].startswith("rtsp://"):
-            # uridecoders -> streammux -> triton_infer -> postprocess 
-            pipeline, pgie, nvosd = uri_local_pipeline(
-                pipeline, pl, 
-                test_video, 
-                batch_size=batch_size,
-                is_save_output=is_save_output, 
-                output_video_name=output_video_name, 
-                image_width=outvid_width, image_height=outvid_height, 
-                is_dali=is_dali, is_grpc=is_grpc)
-        elif os.path.isdir(test_video[0]) or os.path.isfile(test_video[0]) or test_video[0].endswith(".jpg") or test_video[0].endswith(".mjpeg"):
-            pipeline, pgie = image_pipeline(
-                pipeline, pl, 
-                test_video[0], 
-                batch_size=batch_size, 
-                image_width=outvid_width, image_height=outvid_height)
-        else:
-            logger.error("ERROR: Not found source: {}".format((",").join(test_video)))
-            logger.debug(
-                "DEBUG: The system allow a or more source and accepts any format like: mp4, h264, https, rstp... \nSetup --test_video file:///path/to/video_1.mp4 file:///path/to/video_2.mp4 ")
-            sys.exit(1)
+        # uridecoders -> streammux -> triton_infer -> postprocess 
+        pipeline, pgie, nvosd = uri_local_pipeline(
+            pipeline, pl, 
+            test_video, 
+            batch_size=batch_size,
+            is_save_output=is_save_output, 
+            output_video_name=output_video_name, 
+            image_width=outvid_width, image_height=outvid_height, 
+            is_dali=is_dali, is_grpc=is_grpc)
 
     except Exception as ex:
         logger.error(f"ERROR: {ex}")
+        logger.debug(
+            "DEBUG: The system allow a or more source and accepts any format like: mp4, h264, https, rstp... \nSetup --test_video file:///path/to/video_1.mp4 file:///path/to/video_2.mp4 ")
         sys.exit(1)
 
     # create an event loop and feed gstreamer bus mesages to it

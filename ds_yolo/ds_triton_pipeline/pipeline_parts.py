@@ -48,7 +48,7 @@ class PipelineParts():
 
         self.extracted_frame = 0
         
-    def make_elm_or_print_err(self, factoryname, name, printedname, detail=""):
+    def make_element_pl(self, factoryname, name, printedname, detail=""):
         """ Creates an element with Gst Element Factory make.
             Return the element  if successfully created, otherwise print
             to stderr and return None.
@@ -128,7 +128,6 @@ class PipelineParts():
             # set(red, green, blue, alpha); set to Black
             py_nvosd_text_params.text_bg_clr.set(0.0, 0.0, 0.0, 1.0)
             # Using pyds.get_string() to get display_text as string
-            #print(pyds.get_string(py_nvosd_text_params.display_text))
             pyds.nvds_add_display_meta_to_frame(frame_meta, display_meta)
         
             try:
@@ -153,8 +152,7 @@ class PipelineParts():
         rect_params.top = int(bbox[1])
         rect_params.width = int((bbox[2] - bbox[0]))
         rect_params.height = int(bbox[3] - bbox[1])
-        #logger.info(f"rect_params.left: {rect_params.height}")
-
+        
         # Semi-transparent yellow backgroud
         rect_params.has_bg_color = 0
         rect_params.bg_color.set(1, 1, 0, 0.4)
@@ -165,16 +163,12 @@ class PipelineParts():
 
         # Set object info including class, detection confidence, etc.
         obj_meta.confidence = score
-        #obj_meta.class_id = int(label)
-
+        
         # There is no tracking ID upon detection. The tracker will
         # assign an ID.
         obj_meta.object_id = untracked_obj_id
 
-        #lbl_id = int(label)
-        #if lbl_id >= len(label_names):
-        #    lbl_id = 0
-
+        
         # Set the object classification label.
         obj_meta.obj_label = label
 
@@ -215,24 +209,14 @@ class PipelineParts():
         if not gst_buffer:
             logger.warning("Unable to get GstBuffer ")
             return
-        #logger.info(f"gst_buffer: {gst_buffer}")
-        #logger.info(f"hash gst_buffer: {hash(gst_buffer)}")
-
+        
         # Retrieve batch metadata from the gst_buffer
         # Note that pyds.gst_buffer_get_nvds_batch_meta() expects the
         # C address of gst_buffer as input, which is obtained with hash(gst_buffer)
         batch_meta = pyds.gst_buffer_get_nvds_batch_meta(hash(gst_buffer))
         
-        #logger.info("batch_meta: {}".format(batch_meta))
-        
         l_frame = batch_meta.frame_meta_list
 
-        #logger.info(f"l_frame.num_frames_in_batch: {batch_meta.num_frames_in_batch}")
-        #logger.info(f"l_fram.max_frames_in_batch: {batch_meta.max_frames_in_batch}")
-        #logger.info(f"l_frame: {l_frame}")
-        #label_names = self.get_label_names_from_file()
-        
-        c = 0
         while l_frame is not None:
             try:
                 # Note that l_frame.data needs a cast to pyds.NvDsFrameMeta
@@ -240,28 +224,21 @@ class PipelineParts():
                 # in the C code, so the Python garbage collector will leave
                 # it alone.
                 frame_meta = pyds.NvDsFrameMeta.cast(l_frame.data)
-                #logger.info("frame_meta: {}".format(frame_meta))
             except StopIteration:
                 break
-            #logger.info(f"--> frame_num: {frame_meta.frame_num}")
             l_user = frame_meta.frame_user_meta_list
-            #logger.info(f"l_user: {l_user}")
             
             if not self.is_save_output:
                 # get width and height of source video 
                 src_width = frame_meta.source_frame_width
                 src_height = frame_meta.source_frame_height
-                #logger.info(f"source_height: {src_height}")
-                #logger.info(f"source_width: {src_width}")
-
+        
                 height_prp = src_height
                 width_prp = src_width
             else: 
                 height_prp = self.image_height
                 width_prp = self.image_width 
             
-            c += 1
-            #print("c: ", c)
             while l_user is not None:
                 try:
                     # Note that l_user.data needs a cast to pyds.NvDsUserMeta
@@ -276,27 +253,21 @@ class PipelineParts():
                         user_meta.base_meta.meta_type
                         != pyds.NvDsMetaType.NVDSINFER_TENSOR_OUTPUT_META
                 ):
-                    #logger.info("user_meta: {}".format(user_meta))
                     continue
                 
                 # get tensor-meta from triton inference output
                 tensor_meta = pyds.NvDsInferTensorMeta.cast(user_meta.user_meta_data)
-                #logger.info("tensor_meta: {}".format(tensor_meta))
-
+            
                 # Boxes in the tensor meta should be in network resolution which is
                 # found in tensor_meta.network_info. Use this info to scale boxes to
                 # the input frame resolution.
                 layers_info = []
-                #logger.info(f"tensor_meta: {tensor_meta.num_output_layers}")
                 for i in range(tensor_meta.num_output_layers):
                     layer = pyds.get_nvds_LayerInfo(tensor_meta, i)
-                    #logger.info(f"layer.dims: {layer.dims.d}, {layer.dims.numDims}, {layer.dims.numElements}")
                     # Convert tensor metadata to numpy array
                     ptr = ctypes.cast(pyds.get_ptr(layer.buffer), ctypes.POINTER(ctypes.c_float))
                     output_np_array = np.ctypeslib.as_array(ptr, shape=(1, 6001, 1, 1))
-                    #logger.info(f"--> np_array.shape: {output_np_array.shape}")
                     layers_info.append(layer)
-                #logger.info(f"layers_info: {layers_info}")
                 
                 detected_obj = postprocess(
                     output_np_array, 
@@ -326,7 +297,6 @@ class PipelineParts():
                 # If save video output is true, add bbox and score, label information to frame                     
                 if self.is_save_output:
                     for bbox, score, label in zip(bboxes, scores, labels): 
-                        #logger.info(f"bounding box: {bbox}")
                         self.add_obj_meta_to_frame(bbox, score, label, batch_meta, frame_meta)
                 
             try:
