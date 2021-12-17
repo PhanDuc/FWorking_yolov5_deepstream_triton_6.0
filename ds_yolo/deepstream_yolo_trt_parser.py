@@ -166,10 +166,10 @@ def ds_pipeline(
     
     end = time.perf_counter() - start_t
     
-    logger.info(f"Initialize pipeline time: {done_init_t:.5f}")
-    logger.info(f"Inference + Postprocess + save (option): {end:.5f}")
-    logger.info(f"elapsed time: {(done_init_t + end):.5f}")
-    logger.info(f"extracted frames: {pl.extracted_frame}")
+    logger.info(f"[INFO] Initialize pipeline time: {done_init_t:.5f}")
+    logger.info(f"[INFO] Inference + Postprocess + save (option): {end:.5f}")
+    logger.info(f"[INFO] elapsed time: {(done_init_t + end):.5f}")
+    logger.info(f"[INFO] extracted frames: {pl.extracted_frame}")
 
 
 if __name__ == "__main__":
