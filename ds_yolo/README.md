@@ -64,15 +64,15 @@ Or use directly:
 [**dali_yolov5_trt_preprocess** config file](./triton_server_config_file/dali_yolov5_trt_preprocess_config.pbtxt)
 
 ## Run Video Inference 
-![](./deepstream_triton.PNG)
+![](./fig_ds_triton.PNG)
 
 This figure describe Deepstream Triton inference process.
 
 **Note:**
 
-- Config inference is [here](./deepstream_triton_yolov5_trt/ds_yolov5_trt_nopostprocess.txt)
+- **Config inference is [here](./config_ds_triton_infer/ds_yolov5_trt_nopostprocess.txt)**
 
-- You can reference Triton inferserver at [here](https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_plugin_gst-nvinferserver.html)
+- **Details for DeepStream Triton inferserver parameters at [here](https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_plugin_gst-nvinferserver.html)**
 
 ### Run Docker
 ```
@@ -115,7 +115,36 @@ python3 deepstream_yolo_trt_parser.py --is_save
 
 **helping:**
 ```
-usage: deepstream_yolo_trt_parser.py [-h] [--test_video TEST_VIDEO] [--num_class NUM_CLASS] [--is_save] [--conf CONF]                                        [--iou IOU] [--outvid_width OUTVID_WIDTH] [--outvid_height OUTVID_HEIGHT]                                                                                                                                  Deepstream Triton Yolov5 PIPELINE                                                                                                                                                                                                               optional arguments:                                                                                                       -h, --help            show this help message and exit                                                                   --test_video TEST_VIDEO                                                                                                                       test video file path or uri                                                                       --num_class NUM_CLASS                                                                                                                         Number of object detection                                                                        --is_save             Save result video output                                                                          --conf CONF           Confidence threshold for YOLOv5                                                                   --iou IOU             IOU threshold                                                                                     --outvid_width OUTVID_WIDTH                                                                                                                   VIDEO OUTPUT WIDTH                                                                                --outvid_height OUTVID_HEIGHT                                                                                                                 VIDEO OUTPUT_HEIGHT
+usage: deepstream_yolo_trt_parser.py [-h] [--test_video TEST_VIDEO [TEST_VIDEO ...]]
+                                     [--batch_size BATCH_SIZE] [--label_type LABEL_TYPE] [--is_save]
+                                     [--conf CONF] [--iou IOU] [--outvid_width OUTVID_WIDTH]
+                                     [--outvid_height OUTVID_HEIGHT] [--is_dali] [--is_grpc]
+
+Deepstream Triton Yolov5 PIPELINE
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --test_video TEST_VIDEO [TEST_VIDEO ...]
+                        test video file path or uri. The system
+                        allow a or more source and accepts any format like:
+                        mp4, h264, https, rstp... Setup `--test_video`
+                        file:///path/to/video_1.mp4
+                        file:///path/to/video_2.mp4
+  --batch_size BATCH_SIZE
+                        batch size inference
+  --label_type LABEL_TYPE
+                        Label type (flag/nsfw)
+  --is_save             Save result video output
+  --conf CONF           Confidence threshold for YOLOv5
+  --iou IOU             IOU threshold
+  --outvid_width OUTVID_WIDTH
+                        VIDEO OUTPUT WIDTH
+  --outvid_height OUTVID_HEIGHT
+                        VIDEO OUTPUT_HEIGHT
+  --is_dali             DeepStream Triton DALI yolov5 trt, use dali for preprocessing
+  --is_grpc             Don't use DeepStream Triton Docker, use seperately DeepStream and Triton that
+                        need GRPC protocol for communicate
+
 ```
 
 **See results in saved video output: ./ds_triton_yolov5_trt_out.mp4** by add `--is_save` argument.
@@ -124,7 +153,7 @@ If you want to experimental Deepstream + Triton DALI + yolov5 tensorrt inference
 
 
 Result picture:
-![](result.PNG)
+![](fig_result.PNG)
 
 ### test h264 video 
 ```
@@ -138,7 +167,30 @@ python3 deepstream_yolo_trt_parser.py --test_video file:///path/to/video.mp4
 
 ### test URI video 
 ```
-python3 deepstream_yolo_trt_parser.py --test_video https://uri_video.mp4
+python3 deepstream_yolo_trt_parser.py --test_video https://uri_link_video.mp4
 ```
+
+### test Real Time Streaming video (RTSP) 
+```
+python3 deepstream_yolo_trt_parser.py --test_video rtsp://rtsp_link_video.mp4
+```
+
+### test JPEG image or MJPEG
+```
+python3 deepstream_yolo_trt_parser.py --test_video <path/to/image>.jpg
+```
+or 
+```
+python3 deepstream_yolo_trt_parser.py --test_video <path/to/mjpeg>.mjpeg
+```
+
+### Skip-frames
+Option, Specifies the number of consecutive, batches to be skipped for inference. default is 0. 
+
+Change skip-frames at [interval parameter](./config_ds_triton_infer/ds_yolov5_trt_nopostprocess.txt#L55). 
+
+Set `interval : (number of skip frames) - 1`
+
+E.g. want to use skip-frames = 10, set `interval: 9`
 
 ## [Reference](./reference.md)
