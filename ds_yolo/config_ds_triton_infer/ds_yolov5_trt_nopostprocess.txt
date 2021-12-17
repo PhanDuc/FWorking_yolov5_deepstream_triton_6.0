@@ -53,11 +53,12 @@ infer_config {
 input_control {
   process_mode: PROCESS_MODE_FULL_FRAME
   interval: 0 # skip_frames arguments
+  async_mode: false
 }
 
 # Allow triton inference output is metadata
 output_control {
   output_tensor_meta: true
 }
-#async_mode: false
+
 
