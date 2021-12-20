@@ -12,7 +12,7 @@ gi.require_version("Gst", "1.0")
 from gi.repository import GObject, Gst
 from loguru import logger
 
-from common.bus_call import bus_call
+from utils.bus_call import bus_call
 
 from ds_triton_pipeline.pipeline_parts import PipelineParts
 from ds_triton_pipeline.pipeline_type import uri_local_pipeline
