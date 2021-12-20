@@ -1,5 +1,6 @@
 
 infer_config {
+  # unique ID of the gst-nvinfer instance 
   unique_id: 1
   gpu_ids: [0]
   max_batch_size: 4
@@ -56,7 +57,7 @@ input_control {
   async_mode: false
 }
 
-# Allow triton inference output is metadata
+# Allow triton inference output is metadata.
 output_control {
   output_tensor_meta: true
 }

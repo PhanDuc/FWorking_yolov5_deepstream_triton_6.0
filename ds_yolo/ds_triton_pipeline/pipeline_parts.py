@@ -215,10 +215,12 @@ class PipelineParts():
         # C address of gst_buffer as input, which is obtained with hash(gst_buffer)
         batch_meta = pyds.gst_buffer_get_nvds_batch_meta(hash(gst_buffer))
         
+        # Retrive the first frame
         l_frame = batch_meta.frame_meta_list
 
         while l_frame is not None:
             try:
+                # Retrive the metadata for the first frame
                 # Note that l_frame.data needs a cast to pyds.NvDsFrameMeta
                 # The casting also keeps ownership of the underlying memory
                 # in the C code, so the Python garbage collector will leave
@@ -226,6 +228,8 @@ class PipelineParts():
                 frame_meta = pyds.NvDsFrameMeta.cast(l_frame.data)
             except StopIteration:
                 break
+
+            # Retrive the frame meta user list and verify it is not None
             l_user = frame_meta.frame_user_meta_list
             
             if not self.is_save_output:
@@ -241,6 +245,7 @@ class PipelineParts():
             
             while l_user is not None:
                 try:
+                    # Retrive the user metadata 
                     # Note that l_user.data needs a cast to pyds.NvDsUserMeta
                     # The casting also keeps ownership of the underlying memory
                     # in the C code, so the Python garbage collector will leave

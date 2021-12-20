@@ -72,6 +72,12 @@ Or use directly:
 ![](./fig_ds_triton.PNG)
 
 This figure describe Deepstream Triton inference process.
+- DeepStream decode video or image to metadata buffers and put into Gst-inferserver for inference by Triton server.
+- In Gst-inferserver:
+  - data buffers will be preprocessed to triton input tensor.
+  - Triton inference and return output tensor.
+  - We postprocess at triton client so Gst-inferserver return Metadata.
+- At client, we convert metadata to numpy array and do yolo tensorrt postprocess.    
 
 **Note:**
 
@@ -160,33 +166,37 @@ If you want to experimental Deepstream + Triton DALI + yolov5 tensorrt inference
 Result picture:
 ![](fig_result.PNG)
 
-### test h264 video 
+
+### **test h264 video**
 ```
-python3 deepstream_yolo_trt_parser.py --test_video <path/to/video.h264>
+python3 deepstream_yolo_trt_parser.py --test_video file:///path/to/video.h264
 ```
 
-### test mp4 video 
+### **test mp4 video** 
 ```
 python3 deepstream_yolo_trt_parser.py --test_video file:///path/to/video.mp4
 ```
 
-### test URI video 
+<i>**Note: For the system understand that is testing local file, we need to add file:// to path to video.**</i>
+
+
+### **test URI video** 
 ```
 python3 deepstream_yolo_trt_parser.py --test_video https://uri_link_video.mp4
 ```
 
-### test Real Time Streaming video (RTSP) 
+### **test Real Time Streaming video (RTSP)** 
 ```
 python3 deepstream_yolo_trt_parser.py --test_video rtsp://rtsp_link_video.mp4
 ```
 
-### test JPEG image or MJPEG
+### **test JPEG image or MJPEG**
 ```
-python3 deepstream_yolo_trt_parser.py --test_video <path/to/image>.jpg
+python3 deepstream_yolo_trt_parser.py --test_video file:///path/to/image.jpg
 ```
 or 
 ```
-python3 deepstream_yolo_trt_parser.py --test_video <path/to/mjpeg>.mjpeg
+python3 deepstream_yolo_trt_parser.py --test_video file:///path/to/mjpeg.mjpeg
 ```
 
 ### Skip-frames

@@ -163,6 +163,28 @@ def ds_pipeline(
 
 
 if __name__ == "__main__":
+    """
+    Process at client:
+    * Takes a path to a file media or uri.
+
+    * Gstreamer initialization is performed.
+
+    * Several  elements a created in order to make a pipeline.
+
+    * These elements are added to the pipeline and linked together.
+
+    * Probe functions are linked to the pipeline in order to interact with the data:
+
+        * **pgie_src_pad_buffer_probe**: get tensor metadata from triton inference output, convert to numpy array and yolo postprocessing.
+
+        * **osd_sink_pad_buffer_probe**: encode frame and save to video output.
+
+    * The pipeline is set to its PLAYING mode.
+
+    * The main loop is run.
+
+    * The pipeline is set to its NULL mode.
+    """
     sys.exit(
         ds_pipeline(
             test_video=test_video, 
