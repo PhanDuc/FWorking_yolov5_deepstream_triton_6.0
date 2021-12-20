@@ -34,6 +34,13 @@ class PipelineParts():
         is_save_output=True, 
         image_width=1920, image_height=1080, 
         label_type="flag"):
+        """
+        conf_threshold: confidence threshold 
+        nms_threshold: iou threshold for nms
+        is_save_output: save video output
+        image_width, image_height: output video width, height
+        label_type: type of label (flag/nsfw)
+        """
         
         self.conf_thresh = conf_threshold
         self.nms_thresh = nms_threshold
@@ -280,6 +287,7 @@ class PipelineParts():
                     conf_threshold=self.conf_thresh, 
                     nms_threshold=self.nms_thresh)
 
+                # bounding boxes at xmin, ymin, xmax, ymax
                 bboxes = [[int(box.x1), int(box.y1), int(box.x2), int(box.y2)] for box in detected_obj]
                 labels = [self.label(int(box.classID)).name for box in detected_obj]
                 scores = [box.confidence for box in detected_obj]

@@ -63,6 +63,16 @@ def ds_pipeline(
     is_grpc=False,
     output_video_name="./ds_triton_yolov5_trt_out.mp4", 
     label_type="flag"):
+    """
+    test_video: path to test file (.mp4, .h264, https://, rtsp://, .jpg, mjpeg)
+    batch_size: batch size
+    conf_threshold: confidence threshold for postprocess
+    iou_threshold: iou threshold for nms
+    is_save_output: bool for save video output
+    outvid_width, outvid_height: output video width, height
+    output_video_name: path to output video 
+    label_type: type of label (flag/nsfw)  
+    """
     init_t = time.perf_counter()
     # can't save video output if batch size larger than 1
     if batch_size != 1 or len(test_video) != 1:
